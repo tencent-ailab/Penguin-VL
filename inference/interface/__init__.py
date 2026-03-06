@@ -1,0 +1,1 @@
+from .gradio_interface import PenguinVLQwen3GradioInterface
