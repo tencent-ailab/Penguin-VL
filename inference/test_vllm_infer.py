@@ -6,25 +6,25 @@ Shows how to load PenguinVL with vLLM and run text, image, video, and batch infe
 Usage:
     # Single GPU, run all demos
     CUDA_VISIBLE_DEVICES=0 python inference/test_vllm_infer.py \
-        --model-path /path/to/pg-vl-2b
+        --model-path tencent/Penguin-VL-2B
 
     # Text-only demo
-    python inference/test_vllm_infer.py --model-path /path/to/pg-vl-2b --demo text
+    python inference/test_vllm_infer.py --model-path tencent/Penguin-VL-2B --demo text
 
     # Image demo (requires --image-path)
-    python inference/test_vllm_infer.py --model-path /path/to/pg-vl-2b \
-        --demo image --image-path assets/demo.png
+    python inference/test_vllm_infer.py --model-path tencent/Penguin-VL-2B \
+        --demo image --image-path assets/inputs/horse_poet.png
 
     # Video demo (requires --video-path)
-    python inference/test_vllm_infer.py --model-path /path/to/pg-vl-2b \
-        --demo video --video-path assets/cat_and_chicken.mp4 --max-video-frames 16
+    python inference/test_vllm_infer.py --model-path tencent/Penguin-VL-2B \
+        --demo video --video-path assets/cat_and_chicken.mp4 --max-video-frames 128
 
     # Multi-GPU tensor parallelism (e.g. 8B model)
     CUDA_VISIBLE_DEVICES=0,1 python inference/test_vllm_infer.py \
-        --model-path /path/to/pg-vl-8b --tensor-parallel-size 2
+        --model-path tencent/Penguin-VL-8B --tensor-parallel-size 2
 
     # Custom max tokens and GPU memory
-    python inference/test_vllm_infer.py --model-path /path/to/pg-vl-2b \
+    python inference/test_vllm_infer.py --model-path tencent/Penguin-VL-2B \
         --max-new-tokens 256 --gpu-memory-utilization 0.8
 """
 
@@ -194,26 +194,26 @@ def main():
     parser.add_argument(
         "--model-path",
         type=str,
-        default="/x2robot_v2/cyril/pg-vl-2b",
+        default="tencent/Penguin-VL-2B",
         help="PenguinVL model path (HF or local dir)",
     )
     parser.add_argument(
         "--image-path",
         type=str,
         nargs="+",
-        default=["assets/results_image_2b.png"],
+        default=["assets/inputs/horse_poet.png"],
         help="Image path(s) for image/qa/batch demos (first one is used)",
     )
     parser.add_argument(
         "--video-path",
         type=str,
-        default="assets/cat_and_chicken.mp4",
+        default="assets/inputs/cat_and_chicken.mp4",
         help="Video path for video demo",
     )
     parser.add_argument(
         "--max-video-frames",
         type=int,
-        default=16,
+        default=128,
         help="Max frames to sample from video",
     )
     parser.add_argument(
