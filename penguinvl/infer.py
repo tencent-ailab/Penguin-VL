@@ -39,7 +39,7 @@ def main():
     #     }
     # ]
 
-    model_path = "../pg-vl-2b"
+    model_path = "put model here."
     model, processor = model_init(model_path)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model.to(device=device, dtype=torch.bfloat16)
