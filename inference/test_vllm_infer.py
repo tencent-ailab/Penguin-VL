@@ -17,7 +17,7 @@ Usage:
 
     # Video demo (requires --video-path)
     python inference/test_vllm_infer.py --model-path tencent/Penguin-VL-2B \
-        --demo video --video-path assets/cat_and_chicken.mp4 --max-video-frames 128
+        --demo video --video-path assets/cat_and_chicken.mp4 --max-video-frames 180
 
     # Multi-GPU tensor parallelism (e.g. 8B model)
     CUDA_VISIBLE_DEVICES=0,1 python inference/test_vllm_infer.py \
@@ -115,10 +115,10 @@ def make_video_request(video_path: str, question: str,
 def run_demo_text(llm: LLM, sampling_params: SamplingParams) -> None:
     """Demo 1: Text-only conversation."""
     print("\n--- Demo: Text-only ---")
-    request = make_text_request("What is the color of bananas?")
+    request = make_text_request("There are ten birds in a tree. If you shoot and kill one, how many are left?")
     outputs = llm.generate([request], sampling_params=sampling_params)
     text = outputs[0].outputs[0].text.strip()
-    print(f"Input:  What is the color of bananas?")
+    print(f"Input:  There are ten birds in a tree. If you shoot and kill one, how many are left?")
     print(f"Output: {text}\n")
 
 
@@ -126,16 +126,6 @@ def run_demo_image(llm: LLM, sampling_params: SamplingParams, image_path: str) -
     """Demo 2: Single image description."""
     print("\n--- Demo: Single image description ---")
     request = make_image_request(image_path, "Please describe this image in detail.")
-    outputs = llm.generate([request], sampling_params=sampling_params)
-    text = outputs[0].outputs[0].text.strip()
-    print(f"Image:  {image_path}")
-    print(f"Output: {text}\n")
-
-
-def run_demo_qa(llm: LLM, sampling_params: SamplingParams, image_path: str) -> None:
-    """Demo 3: Image question answering."""
-    print("\n--- Demo: Image QA ---")
-    request = make_image_request(image_path, "According to the image, which model performs best?")
     outputs = llm.generate([request], sampling_params=sampling_params)
     text = outputs[0].outputs[0].text.strip()
     print(f"Image:  {image_path}")
@@ -207,13 +197,13 @@ def main():
     parser.add_argument(
         "--video-path",
         type=str,
-        default="assets/inputs/cat_and_chicken.mp4",
+        default="assets/inputs/polar_bear.mp4",
         help="Video path for video demo",
     )
     parser.add_argument(
         "--max-video-frames",
         type=int,
-        default=128,
+        default=190,
         help="Max frames to sample from video",
     )
     parser.add_argument(
@@ -225,9 +215,9 @@ def main():
     parser.add_argument(
         "--demo",
         type=str,
-        choices=["text", "image", "qa", "video", "batch", "all"],
+        choices=["text", "image", "video", "batch", "all"],
         default="all",
-        help="Demo to run: text, image, qa, video, batch, or all",
+        help="Demo to run: text, image, video, batch, or all",
     )
     parser.add_argument(
         "--tensor-parallel-size",
@@ -292,11 +282,6 @@ def main():
             run_demo_image(llm, sampling_params, image_path)
         else:
             print("\n--- Demo: Single image --- Skipped (no --image-path)\n")
-    if args.demo == "qa" or args.demo == "all":
-        if image_path:
-            run_demo_qa(llm, sampling_params, image_path)
-        else:
-            print("\n--- Demo: Image QA --- Skipped (no --image-path)\n")
     if args.demo == "video" or args.demo == "all":
         if args.video_path:
             run_demo_video(

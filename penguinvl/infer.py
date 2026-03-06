@@ -12,18 +12,18 @@ def main():
     # conversation = [
     #     {
     #         "role": "user",
-    #         "content": "What is the color of bananas?",
+    #         "content": "There are ten birds in a tree. If you shoot and kill one, how many are left?",
     #     }
     # ]
 
     modal = "image"
-    image_path = "assets/results_image_2b.png"
+    image_path = "assets/inputs/horse_poet.png"
     conversation = [
         {
             "role": "user",
             "content": [
                 {"type": "image"},
-                {"type": "text", "text": "What model is the best?"},
+                {"type": "text", "text": "Describe this image in detail."},
             ]
         }
     ]
@@ -33,13 +33,13 @@ def main():
     #     {
     #         "role": "user",
     #         "content": [
-    #             {"type": "video", "video": {"video_path", "assets/cat_and_chicken.mp4", "fps": 1, "max_frames": 180}},
+    #             {"type": "video", "video": {"video_path", "assets/inputs/polar_bear.mp4", "fps": 1, "max_frames": 180}},
     #             {"type": "text", "text": "What is the cat doing?"},
     #         ]
     #     }
     # ]
 
-    model_path = "model path here."
+    model_path = "../pg-vl-2b"
     model, processor = model_init(model_path)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model.to(device=device, dtype=torch.bfloat16)

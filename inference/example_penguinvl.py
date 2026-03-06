@@ -13,7 +13,7 @@ def parse_args():
     parser.add_argument(
         "--model-path",
         type=str,
-        default="pg-team/pg-vl-8b-hf",
+        default="tencent/Penguin-VL-8B",
         help="Hugging Face model path or local model directory.",
     )
     return parser.parse_args()
@@ -59,46 +59,47 @@ def main():
         {
             "role": "user",
             "content": [
-                {"type": "video", "video": {"video_path": "./assets/cat_and_chicken.mp4", "fps": 1, "max_frames": 180}},
-                {"type": "text", "text": "What is the cat doing? Please describe the scene, the obejcts and the actions in detail."},
+                {"type": "video", "video": {"video_path": "./assets/inputs/polar_bear.mp4", "fps": 1, "max_frames": 180}},
+                {"type": "text", "text": "Describe this video in detail, then provide annotations with timestamps."},
             ]
         },
     ]
-    print(infer(conversation))
+    print("Video conversation:\n", infer(conversation), '\n\n')
 
     # Image conversation
     conversation = [
         {
             "role": "user",
             "content": [
-                {"type": "image", "image": {"image_path": "./assets/sora.png"}},
-                {"type": "text", "text": "Please describe the model?"},
+                {"type": "image", "image": {"image_path": "./assets/inputs/horse_poet.png"}},
+                {"type": "text", "text": "Please describe the image in detail."},
             ]
         }
     ]
-    print(infer(conversation))
+    print("Image conversation:\n", infer(conversation), '\n\n')
 
     # Mixed conversation
     conversation = [
         {
             "role": "user",
             "content": [
-                {"type": "video", "video": {"video_path": "./assets/cat_and_chicken.mp4", "fps": 1, "max_frames": 180}},
-                {"type": "text", "text": "What is the relationship between the video and the following image?"},
-                {"type": "image", "image": {"image_path": "./assets/sora.png"}},
+                {"type": "text", "text": "Write a fairy tale based on the video and the image below:\nVideo\n"},
+                {"type": "video", "video": {"video_path": "./assets/inputs/polar_bear.mp4", "fps": 1, "max_frames": 180}},
+                {"type": "text", "text": "\n\nImage\n"},
+                {"type": "image", "image": {"image_path": "./assets/inputs/horse_poet.png"}},
             ]
         }
     ]
-    print(infer(conversation))
+    print("Mixed conversation:\n", infer(conversation), '\n\n')
 
     # Plain text conversation
     conversation = [
         {
             "role": "user",
-            "content": "What is the color of bananas?",
+            "content": "There are ten birds in a tree. If you shoot and kill one, how many are left?",
         }
     ]
-    print(infer(conversation))
+    print("Text conversation:\n", infer(conversation), '\n\n')
 
 
 if __name__ == "__main__":
