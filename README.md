@@ -8,7 +8,8 @@
 
 [![Hugging Face](https://img.shields.io/badge/🤗-2B_Model-F6C343.svg)](https://huggingface.co/tencent/Penguin-VL-2B)
 [![Hugging Face](https://img.shields.io/badge/🤗-8B_Model-F6C343.svg)](https://huggingface.co/tencent/Penguin-VL-8B)
-[![Hugging Face](https://img.shields.io/badge/🤗-Demo_(Coming_soon)-F6C343.svg)](https://huggingface.co/xxx) <br>
+[![Hugging Face](https://img.shields.io/badge/🤗-Encoder-F6C343.svg)](https://huggingface.co/tencent/Penguin-Encoder) <br>
+[![Hugging Face](https://img.shields.io/badge/🤗-Demo_(Coming_soon)-F6C343.svg)](https://huggingface.co/xxx)
 [![hf_paper](https://img.shields.io/badge/🤗-Paper%20In%20HF-8B5CF6.svg)](https://huggingface.co/papers/xxx.xxxx)
 [![arXiv](https://img.shields.io/badge/Arxiv-xxx.xxxx-B91C1C.svg?logo=arXiv)](https://arxiv.org/abs/xxx.xxxx)
 </h5>
@@ -18,7 +19,7 @@
 ## 📰 News
 
 * **[2025.03]** Release inference code, vLLM plugin, and Gradio demo for Penguin-VL.
-* **[2025.03]** Release Penguin-VL-2B, Penguin-VL-8B, and Penguin Vision Encoder on [Hugging Face](https://huggingface.co/collections/tencent/ai-lab).
+* **[2025.03]** Release [Penguin-VL-2B](https://huggingface.co/tencent/Penguin-VL-2B), [Penguin-VL-8B](https://huggingface.co/tencent/Penguin-VL-8B), and [Penguin Vision Encoder](https://huggingface.co/tencent/Penguin-Encoder) on Hugging Face.
 
 ---
 
