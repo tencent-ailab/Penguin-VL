@@ -6,9 +6,9 @@
 
 <h5 align="center">
 
-[![Hugging Face](https://img.shields.io/badge/🤗-2B_Model-F6C343.svg)](https://huggingface.co/xxx/pg-vl-2b-hf)
-[![Hugging Face](https://img.shields.io/badge/🤗-8B_Model-F6C343.svg)](https://huggingface.co/xxx/pg-vl-8b-hf)
-[![Hugging Face](https://img.shields.io/badge/🤗-Demo-F6C343.svg)](https://huggingface.co/xxx) <br>
+[![Hugging Face](https://img.shields.io/badge/🤗-2B_Model-F6C343.svg)](https://huggingface.co/tencent/Penguin-VL-2B)
+[![Hugging Face](https://img.shields.io/badge/🤗-8B_Model-F6C343.svg)](https://huggingface.co/tencent/Penguin-VL-8B)
+[![Hugging Face](https://img.shields.io/badge/🤗-Encoder-F6C343.svg)](https://huggingface.co/tencent/Penguin-Encoder) <br>
 [![hf_paper](https://img.shields.io/badge/🤗-Paper%20In%20HF-8B5CF6.svg)](https://huggingface.co/papers/xxx.xxxx)
 [![arXiv](https://img.shields.io/badge/Arxiv-xxx.xxxx-B91C1C.svg?logo=arXiv)](https://arxiv.org/abs/xxx.xxxx)
 </h5>
@@ -18,7 +18,7 @@
 ## 📰 News
 
 * **[2025.03]** Release inference code, vLLM plugin, and Gradio demo for Penguin-VL.
-* **[2025.03]** Release Penguin-VL-2B, Penguin-VL-8B, and Penguin Vision Encoder on [Hugging Face](https://huggingface.co/xxx).
+* **[2025.03]** Release [Penguin-VL-2B](https://huggingface.co/tencent/Penguin-VL-2B), [Penguin-VL-8B](https://huggingface.co/tencent/Penguin-VL-8B), and [Penguin Vision Encoder](https://huggingface.co/tencent/Penguin-Encoder) on Hugging Face.
 
 ---
 
@@ -70,9 +70,9 @@ The released checkpoints and encoder weights are listed below.
 
 | Model | Hugging Face |
 | :---- | :----------- |
-| **Penguin-VL-2B** | [xxx/pg-vl-2b-hf](https://huggingface.co/xxx/pg-vl-2b-hf) |
-| **Penguin-VL-8B** | [xxx/pg-vl-8b-hf](https://huggingface.co/xxx/pg-vl-8b-hf) |
-| **Penguin Vision Encoder** | [xxx/pg-vision-encoder](https://huggingface.co/xxx/pg-vision-encoder) |
+| **Penguin-VL-2B** | [tencent/Penguin-VL-2B](https://huggingface.co/tencent/Penguin-VL-2B) |
+| **Penguin-VL-8B** | [tencent/Penguin-VL-8B](https://huggingface.co/tencent/Penguin-VL-8B) |
+| **Penguin Vision Encoder** | [tencent/Penguin-Encoder](https://huggingface.co/tencent/Penguin-Encoder) |
 
 ---
 
@@ -124,7 +124,7 @@ Use HuggingFace `AutoModelForCausalLM` + `AutoProcessor` for image, video, and t
 python inference/example_penguinvl.py
 ```
 
-You can provide a customized `--model-path` argument to the script (default: `xxx/pg-vl-8b-hf`). Supported formats:
+You can provide a customized `--model-path` argument to the script (default: `tencent/Penguin-VL-8B`). Supported formats:
 
 - **Video:** `type: "video"` with `video_path`, `fps`, `max_frames`
 - **Image:** `type: "image"` with `image_path`
@@ -158,10 +158,10 @@ export LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LIBRARY_PATH
 
 ```bash
 # Single GPU
-python -m penguinvl.plugin.vllm serve xxx/pg-vl-2b-hf
+python -m penguinvl.plugin.vllm serve tencent/Penguin-VL-2B
 
 # Multi-GPU (e.g. 8B on 2 GPUs)
-python -m penguinvl.plugin.vllm serve xxx/pg-vl-8b-hf --port 8000 --tensor-parallel-size 2
+python -m penguinvl.plugin.vllm serve tencent/Penguin-VL-8B --port 8000 --tensor-parallel-size 2
 ```
 
 Additional options: `--host`, `--max-model-len`, etc. (see vLLM 0.11 `serve` docs).
@@ -172,19 +172,19 @@ Run text, image, video, and batch demos:
 
 ```bash
 # All demos (single GPU)
-CUDA_VISIBLE_DEVICES=0 python inference/test_vllm_infer.py --model-path xxx/pg-vl-2b-hf
+CUDA_VISIBLE_DEVICES=0 python inference/test_vllm_infer.py --model-path tencent/Penguin-VL-2B
 
 # Text-only
-CUDA_VISIBLE_DEVICES=0 python inference/test_vllm_infer.py --model-path xxx/pg-vl-2b-hf --demo text
+CUDA_VISIBLE_DEVICES=0 python inference/test_vllm_infer.py --model-path tencent/Penguin-VL-2B --demo text
 
 # Image (requires --image-path)
-CUDA_VISIBLE_DEVICES=0 python inference/test_vllm_infer.py --model-path xxx/pg-vl-2b-hf --demo image --image-path assets/inputs/sora.png
+CUDA_VISIBLE_DEVICES=0 python inference/test_vllm_infer.py --model-path tencent/Penguin-VL-2B --demo image --image-path assets/inputs/sora.png
 
 # Video
-CUDA_VISIBLE_DEVICES=0 python inference/test_vllm_infer.py --model-path xxx/pg-vl-2b-hf --demo video --video-path assets/inputs/cat_and_chicken.mp4
+CUDA_VISIBLE_DEVICES=0 python inference/test_vllm_infer.py --model-path tencent/Penguin-VL-2B --demo video --video-path assets/inputs/cat_and_chicken.mp4
 
 # 8B with tensor parallelism (2 GPUs)
-CUDA_VISIBLE_DEVICES=0,1 python inference/test_vllm_infer.py --model-path xxx/pg-vl-8b-hf --tensor-parallel-size 2
+CUDA_VISIBLE_DEVICES=0,1 python inference/test_vllm_infer.py --model-path tencent/Penguin-VL-8B --tensor-parallel-size 2
 ```
 
 | Argument | Description |
@@ -205,7 +205,7 @@ Launch a local web UI with image/video upload and chat.
 ### Quick Start
 
 ```bash
-python inference/launch_gradio_demo.py --model-path xxx/pg-vl-2b-hf
+python inference/launch_gradio_demo.py --model-path tencent/Penguin-VL-2B
 ```
 
 Then open **http://localhost:33666** (or your machine’s IP + port) in a browser.
@@ -223,13 +223,13 @@ Then open **http://localhost:33666** (or your machine’s IP + port) in a browse
 
 ```bash
 # 2B model, default ports
-python inference/launch_gradio_demo.py --model-path xxx/pg-vl-2b-hf
+python inference/launch_gradio_demo.py --model-path tencent/Penguin-VL-2B
 
 # 8B model, custom UI port
-python inference/launch_gradio_demo.py --model-path xxx/pg-vl-8b-hf --interface-port 8080
+python inference/launch_gradio_demo.py --model-path tencent/Penguin-VL-8B --interface-port 8080
 
 # Multi-worker backend
-python inference/launch_gradio_demo.py --model-path xxx/pg-vl-2b-hf --nproc 4
+python inference/launch_gradio_demo.py --model-path tencent/Penguin-VL-2B --nproc 4
 ```
 
 ---

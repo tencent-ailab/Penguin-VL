@@ -13,7 +13,7 @@ def parse_args():
     parser.add_argument(
         "--model-path",
         type=str,
-        default="pg-team/pg-vl-8b-hf",
+        default="tencent/Penguin-VL-8B",
         help="Hugging Face model path or local model directory.",
     )
     return parser.parse_args()
@@ -59,7 +59,7 @@ def main():
         {
             "role": "user",
             "content": [
-                {"type": "video", "video": {"video_path": "./assets/cat_and_chicken.mp4", "fps": 1, "max_frames": 180}},
+                {"type": "video", "video": {"video_path": "./assets/inputs/cat_and_chicken.mp4", "fps": 1, "max_frames": 180}},
                 {"type": "text", "text": "What is the cat doing? Please describe the scene, the obejcts and the actions in detail."},
             ]
         },
@@ -71,7 +71,7 @@ def main():
         {
             "role": "user",
             "content": [
-                {"type": "image", "image": {"image_path": "./assets/sora.png"}},
+                {"type": "image", "image": {"image_path": "./assets/inputs/sora.png"}},
                 {"type": "text", "text": "Please describe the model?"},
             ]
         }
@@ -83,9 +83,9 @@ def main():
         {
             "role": "user",
             "content": [
-                {"type": "video", "video": {"video_path": "./assets/cat_and_chicken.mp4", "fps": 1, "max_frames": 180}},
+                {"type": "video", "video": {"video_path": "./assets/inputs/cat_and_chicken.mp4", "fps": 1, "max_frames": 180}},
                 {"type": "text", "text": "What is the relationship between the video and the following image?"},
-                {"type": "image", "image": {"image_path": "./assets/sora.png"}},
+                {"type": "image", "image": {"image_path": "./assets/inputs/sora.png"}},
             ]
         }
     ]
