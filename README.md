@@ -102,10 +102,8 @@ conda install ffmpeg -y # optional
 pip install -r requirements.txt
 
 # Install Flash Attention (recommended for faster inference)
-pip install flash-attn --no-build-isolation
+pip install flash-attn==2.8.3 --no-build-isolation
 ```
-
-`requirements.txt` includes `torch`, `transformers`, `accelerate`, `decord`, `gradio`, `flash_attn`, etc. For CPU-only testing, you may omit `flash_attn` and CUDA-related dependencies.
 
 ### Version Notes
 
