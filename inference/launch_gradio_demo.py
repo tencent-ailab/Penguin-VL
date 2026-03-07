@@ -14,6 +14,7 @@ if __name__ == "__main__":
     parser.add_argument("--model-path", "--model_path", type=str, required=True)
     parser.add_argument("--server-port", "--server_port", type=int, default=16667)
     parser.add_argument("--interface-port", "--interface_port", type=int, default=33666)
+    parser.add_argument("--server-name", "--server_name", type=str, default="0.0.0.0")
     parser.add_argument("--nproc", type=int, default=1)
     args = parser.parse_args()
 
@@ -34,8 +35,8 @@ if __name__ == "__main__":
     model_client = PenguinVLQwen3PlainClient(port=args.server_port)
     interface = PenguinVLQwen3GradioInterface(
         model_client,
-        example_dir="./assets",
-        server_name="0.0.0.0",
+        example_dir="./assets/inputs",
+        server_name=args.server_name,
         server_port=args.interface_port,
     )
     interface.launch()
