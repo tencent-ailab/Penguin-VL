@@ -102,6 +102,7 @@ conda install ffmpeg -y # optional
 # Install dependencies (inference + Gradio demo)
 pip install -r requirements.txt
 
+# NOTE: If you plan to use vLLM, it's recommended to install vLLM before flash-attn (see § vLLM Inference).
 # Install Flash Attention (recommended for faster inference)
 pip install flash-attn==2.8.3 --no-build-isolation
 ```
@@ -161,7 +162,8 @@ The clean source notebook lives at [inference/notebooks/01_penguinvl_inference_r
 
 ## ⚡ vLLM Inference
 
-> Installing **vLLM 0.11.0** requires **PyTorch 2.8** and the corresponding compatible version of **Flash Attention**. This setup may different from the default Transformers inference environment (which recommends PyTorch ≥ 2.5). You may need to create a separate environment or upgrade dependencies accordingly to avoid version conflicts.
+> Installing **vLLM 0.11.0** requires **PyTorch 2.8** and the corresponding compatible version of **Flash Attention**. This setup may different from the default Transformers inference environment (which recommends PyTorch ≥ 2.5). To avoid version conflicts, you may need to create a separate environment or upgrade dependencies accordingly.  
+> **Install order note:** if you plan to use vLLM, it's recommended to install **vLLM first**, and then install **Flash Attention**.
 
 ### Environment
 
@@ -172,15 +174,16 @@ The clean source notebook lives at [inference/notebooks/01_penguinvl_inference_r
 pip install vllm==0.11.0
 ```
 
-**Install order note:** If you plan to use vLLM, it's recommended to install **vLLM first**, and then install **Flash Attention**.  
-If you have installed vLLM successfully but see **Flash Attention / `flash-attn` runtime errors** when running, try reinstalling `flash-attn`:
+### Troubleshooting
+
+- **Flash Attention / `flash-attn` import errors** (e.g., `ImportError: ... undefined symbol: ...`): try reinstalling `flash-attn`:
 
 ```bash
 pip uninstall flash-attn
 pip install flash-attn --no-cache --no-build-isolation
 ```
 
-**Troubleshooting:** If you see `cannot find -lcuda` during flashinfer build:
+- **`cannot find -lcuda` during flashinfer build**:
 
 ```bash
 export LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LIBRARY_PATH
