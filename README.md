@@ -172,6 +172,14 @@ The clean source notebook lives at [inference/notebooks/01_penguinvl_inference_r
 pip install vllm==0.11.0
 ```
 
+**Install order note:** If you plan to use vLLM, it's recommended to install **vLLM first**, and then install **Flash Attention**.  
+If you have installed vLLM successfully but see **Flash Attention / `flash-attn` runtime errors** when running, try reinstalling `flash-attn`:
+
+```bash
+pip uninstall flash-attn
+pip install flash-attn --no-cache --no-build-isolation
+```
+
 **Troubleshooting:** If you see `cannot find -lcuda` during flashinfer build:
 
 ```bash
