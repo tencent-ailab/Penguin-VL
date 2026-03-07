@@ -9,7 +9,7 @@
 [![Hugging Face](https://img.shields.io/badge/🤗-2B_Model-F6C343.svg)](https://huggingface.co/tencent/Penguin-VL-2B)
 [![Hugging Face](https://img.shields.io/badge/🤗-8B_Model-F6C343.svg)](https://huggingface.co/tencent/Penguin-VL-8B)
 [![Hugging Face](https://img.shields.io/badge/🤗-Encoder-F6C343.svg)](https://huggingface.co/tencent/Penguin-Encoder) <br>
-[![Hugging Face](https://img.shields.io/badge/🤗-Demo_(Coming_soon)-F6C343.svg)](https://huggingface.co/xxx)
+[![Hugging Face](https://img.shields.io/badge/🤗-Demo-F6C343.svg)](https://huggingface.co/spaces/lkeab/Penguin-VL-8B)
 [![hf_paper](https://img.shields.io/badge/🤗-Paper%20In%20HF-8B5CF6.svg)](https://huggingface.co/papers/xxx.xxxx)
 [![arXiv](https://img.shields.io/badge/Arxiv-xxx.xxxx-B91C1C.svg?logo=arXiv)](https://arxiv.org/abs/xxx.xxxx)
 </h5>
