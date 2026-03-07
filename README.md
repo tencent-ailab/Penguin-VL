@@ -132,6 +132,33 @@ You can provide a customized `--model-path` argument to the script (default: `te
 
 ---
 
+## 📓 Cookbook
+
+Checkout the inference notebook for a GitHub-friendly walkthrough of Penguin-VL across diverse tasks.  
+Unlike a multi-notebook cookbook, Penguin-VL currently provides **one consolidated notebook** that covers multiple representative examples in a single place.
+
+| Notebook | Description |
+| :------- | :---------- |
+| [Inference Recipes](inference/notebooks/01_penguinvl_inference_recipes.public.ipynb) | Demonstrations of Penguin-VL for **visual code generation**, **OCR/document parsing**, **creative image understanding**, **table extraction**, **multi-round chart analysis**, **multi-round video understanding**, **mixed video+image prompting**, and a **text-only baseline**. |
+
+If you want to re-execute the notebook locally and regenerate the GitHub-previewable output:
+
+```bash
+export PENGUIN_VL_MODEL_PATH=tencent/Penguin-VL-8B
+
+jupyter nbconvert \
+  --to notebook \
+  --execute \
+  --output 01_penguinvl_inference_recipes.public.ipynb \
+  --ExecutePreprocessor.timeout=-1 \
+  --ExecutePreprocessor.kernel_name=penguinvl \
+  inference/notebooks/01_penguinvl_inference_recipes.source.ipynb
+```
+
+The clean source notebook lives at [inference/notebooks/01_penguinvl_inference_recipes.source.ipynb](inference/notebooks/01_penguinvl_inference_recipes.source.ipynb).
+
+---
+
 ## ⚡ vLLM Inference
 
 > Installing **vLLM 0.11.0** requires **PyTorch 2.8** and the corresponding compatible version of **Flash Attention**. This setup may different from the default Transformers inference environment (which recommends PyTorch ≥ 2.5). You may need to create a separate environment or upgrade dependencies accordingly to avoid version conflicts.
@@ -243,6 +270,7 @@ python inference/launch_gradio_demo.py --model-path tencent/Penguin-VL-8B --npro
 │   ├── example_penguinvl.py      # Transformers inference example
 │   ├── test_vllm_infer.py        # vLLM inference demo
 │   ├── launch_gradio_demo.py     # Gradio local demo
+│   ├── notebooks/                # Executed and source Jupyter notebooks
 │   ├── server/                   # Backend for Gradio
 │   ├── interface/                # Gradio UI
 │   └── transformers_api/         # Transformers model/processor wrappers
