@@ -160,6 +160,42 @@ The clean source notebook lives at [inference/notebooks/01_penguinvl_inference_r
 
 ---
 
+## 🤗 Gradio Demo (Local UI)
+
+Launch a local web UI with image/video upload and chat.
+
+### Quick Start
+
+```bash
+python inference/launch_gradio_demo.py --model-path tencent/Penguin-VL-8B
+```
+
+Then open **http://localhost:33666** (or your machine’s IP + port) in a browser.
+
+### Options
+
+| Option | Description | Default |
+| :----- | :----------- | :------ |
+| `--model-path` | Model path or HuggingFace ID | *required* |
+| `--server-port` | Backend inference server port | 16667 |
+| `--interface-port` | Gradio web UI port | 33666 |
+| `--nproc` | Number of backend worker processes | 1 |
+
+### Examples
+
+```bash
+# 2B model, default ports
+python inference/launch_gradio_demo.py --model-path tencent/Penguin-VL-2B
+
+# 8B model, custom UI port
+python inference/launch_gradio_demo.py --model-path tencent/Penguin-VL-8B --interface-port 8080
+
+# Multi-worker backend
+python inference/launch_gradio_demo.py --model-path tencent/Penguin-VL-8B --nproc 4
+```
+
+---
+
 ## ⚡ vLLM Inference
 
 > Installing **vLLM 0.11.0** requires **PyTorch 2.8** and the corresponding compatible version of **Flash Attention**. This setup may different from the default Transformers inference environment (which recommends PyTorch ≥ 2.5). To avoid version conflicts, you may need to create a separate environment or upgrade dependencies accordingly.  
@@ -232,41 +268,6 @@ CUDA_VISIBLE_DEVICES=0,1 python inference/test_vllm_infer.py --model-path tencen
 | `--max-model-len` | Max context length |
 | `--gpu-memory-utilization` | GPU memory fraction (0–1) |
 
----
-
-## 🤗 Gradio Demo (Local UI)
-
-Launch a local web UI with image/video upload and chat.
-
-### Quick Start
-
-```bash
-python inference/launch_gradio_demo.py --model-path tencent/Penguin-VL-8B
-```
-
-Then open **http://localhost:33666** (or your machine’s IP + port) in a browser.
-
-### Options
-
-| Option | Description | Default |
-| :----- | :----------- | :------ |
-| `--model-path` | Model path or HuggingFace ID | *required* |
-| `--server-port` | Backend inference server port | 16667 |
-| `--interface-port` | Gradio web UI port | 33666 |
-| `--nproc` | Number of backend worker processes | 1 |
-
-### Examples
-
-```bash
-# 2B model, default ports
-python inference/launch_gradio_demo.py --model-path tencent/Penguin-VL-2B
-
-# 8B model, custom UI port
-python inference/launch_gradio_demo.py --model-path tencent/Penguin-VL-8B --interface-port 8080
-
-# Multi-worker backend
-python inference/launch_gradio_demo.py --model-path tencent/Penguin-VL-8B --nproc 4
-```
 
 ---
 
