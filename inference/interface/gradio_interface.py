@@ -4,7 +4,10 @@ import os.path as osp
 import gradio as gr
 
 HEADER = """
-# PenguinVL Gradio Interface
+# Penguin-VL-8B Gradio Interface
+
+Developed by [Penguin-VL](https://github.com/tencent-ailab/Penguin-VL) team at Tencent AI Lab.
+
 """
 
 

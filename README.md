@@ -124,7 +124,7 @@ Use HuggingFace `AutoModelForCausalLM` + `AutoProcessor` for image, video, and t
 python inference/example_penguinvl.py
 ```
 
-You can provide a customized `--model-path` argument to the script (default: `tencent/Penguin-VL-8B`). Supported formats:
+You can provide a customized `--model-path` argument to the script (default: `tencent/Penguin-VL-8B`). You can also set it to `tencent/Penguin-VL-2B`. Supported formats:
 
 - **Video:** `type: "video"` with `video_path`, `fps`, `max_frames`
 - **Image:** `type: "image"` with `image_path`
