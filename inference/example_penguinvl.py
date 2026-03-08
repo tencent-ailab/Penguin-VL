@@ -75,7 +75,7 @@ def main():
     print(f"Assistant: {response}\n")
 
     # Example2: Single Image conversation (ocr)
-    image_question = "please parse the text content in the paragraphs, from left to right, from top to bottom."
+    image_question = "please output the text in the image"
     conversation = [
         {
             "role": "user",

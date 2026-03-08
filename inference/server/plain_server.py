@@ -1,6 +1,7 @@
 import argparse
 import random
 import socket
+import struct
 import time
 import traceback
 
@@ -12,7 +13,7 @@ from threading import Thread
 from multiprocessing import Process, Queue
 
 EOS_FLAG = "<EOS>"
-SEPARATOR = "<SEP>"
+FRAME_HEADER_SIZE = 4
 
 
 def get_logger(name):
@@ -23,6 +24,31 @@ def get_logger(name):
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     return logger
+
+
+def encode_message(payload):
+    data = json.dumps(payload).encode("utf-8")
+    return struct.pack("!I", len(data)) + data
+
+
+def decode_messages(buffer):
+    messages = []
+    offset = 0
+
+    while len(buffer) - offset >= FRAME_HEADER_SIZE:
+        payload_size = struct.unpack("!I", buffer[offset:offset + FRAME_HEADER_SIZE])[0]
+        frame_end = offset + FRAME_HEADER_SIZE + payload_size
+        if len(buffer) < frame_end:
+            break
+
+        payload = bytes(buffer[offset + FRAME_HEADER_SIZE:frame_end])
+        messages.append(json.loads(payload.decode("utf-8")))
+        offset = frame_end
+
+    if offset:
+        del buffer[:offset]
+
+    return messages
 
 
 class Streamer(object):
@@ -61,10 +87,11 @@ class PenguinVLQwen3PlainClient(object):
         self.logger = get_logger("penguinvl_qwen3.client")
 
         client_thread = Thread(target=self._client_worker)
-        client_thread.deamon = True
-        client_thread.start()        
+        client_thread.daemon = True
+        client_thread.start()
 
     def _receive_worker(self, server_socket):
+        recv_buffer = bytearray()
         try:
             while True:
                 data = server_socket.recv(8192)
@@ -74,16 +101,15 @@ class PenguinVLQwen3PlainClient(object):
                         streamer.put(streamer.stop_signal)
                     break
 
-                for sub_data in data.decode("utf-8").split(SEPARATOR):
-                    if len(sub_data) == 0:
-                        continue
+                recv_buffer.extend(data)
+                try:
+                    messages = decode_messages(recv_buffer)
+                except:
+                    self.logger.info(f"Failed to parse buffered data: {traceback.format_exc()}")
+                    recv_buffer.clear()
+                    continue
 
-                    try:
-                        sub_data = json.loads(sub_data)
-                    except:
-                        self.logger.info(f"Failed to parse data: {sub_data}")
-                        continue
-
+                for sub_data in messages:
                     self.logger.info(f"Received: {sub_data['data']}")
                     self.streamers[sub_data["id"]].put(sub_data["data"])
 
@@ -96,9 +122,8 @@ class PenguinVLQwen3PlainClient(object):
     def _send_worker(self, server_socket):
         while True:
             request_id, conversation = self.input_buffer.get()
-            data = json.dumps({"id": request_id, "data": conversation}) + SEPARATOR
-            server_socket.sendall(data.encode("utf-8"))
-            self.logger.info(f"Sent: {data}")
+            server_socket.sendall(encode_message({"id": request_id, "data": conversation}))
+            self.logger.info(f"Sent request: {request_id}")
 
     def _client_worker(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
@@ -187,7 +212,7 @@ class PenguinVLQwen3PlainServer(object):
                 }
 
                 thread = Thread(target=model.generate, kwargs=generation_kwargs)
-                thread.deamon = True
+                thread.daemon = True
                 thread.start()
 
                 for token in streamer:
@@ -200,6 +225,7 @@ class PenguinVLQwen3PlainServer(object):
                 output_buffer.put((request_id, EOS_FLAG))
 
     def _receive_worker(self, logger, input_buffer, client_socket, client_address):
+        recv_buffer = bytearray()
         try:
             while True:
                 data = client_socket.recv(8192)
@@ -207,16 +233,15 @@ class PenguinVLQwen3PlainServer(object):
                     logger.info(f"Connection from {client_address} has been terminated.")
                     break
 
-                for sub_data in data.decode("utf-8").split(SEPARATOR):
-                    if len(sub_data) == 0:
-                        continue
+                recv_buffer.extend(data)
+                try:
+                    messages = decode_messages(recv_buffer)
+                except:
+                    logger.info(f"Failed to parse buffered data from {client_address}: {traceback.format_exc()}")
+                    recv_buffer.clear()
+                    continue
 
-                    try:
-                        sub_data = json.loads(sub_data)
-                    except:
-                        logger.info(f"Failed to parse data: {sub_data}")
-                        continue
-
+                for sub_data in messages:
                     logger.info(f"Received from {client_address}: {sub_data}")
                     input_buffer.put((sub_data["id"], sub_data["data"]))
 
@@ -227,8 +252,7 @@ class PenguinVLQwen3PlainServer(object):
         try:
             while True:
                 request_id, token = output_buffer.get()
-                data = json.dumps({"id": request_id, "data": token}) + SEPARATOR
-                client_socket.sendall(data.encode("utf-8"))
+                client_socket.sendall(encode_message({"id": request_id, "data": token}))
 
         except ConnectionResetError:
             logger.info(f"Connection from {client_address} has been terminated.")
@@ -254,11 +278,11 @@ class PenguinVLQwen3PlainServer(object):
                 logger.info(f"Connected to {client_address}.")
 
                 receive_thread = Thread(target=self._receive_worker, args=(logger, input_buffer, client_socket, client_address))
-                receive_thread.deamon = True
+                receive_thread.daemon = True
                 receive_thread.start()
 
                 send_thread = Thread(target=self._send_worker, args=(logger, output_buffer, client_socket, client_address))
-                send_thread.deamon = True
+                send_thread.daemon = True
                 send_thread.start()
 
 
