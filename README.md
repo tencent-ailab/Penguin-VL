@@ -12,7 +12,7 @@
 [![Hugging Face](https://img.shields.io/badge/🤗-Demo_Space_L40-F6C343.svg)](https://huggingface.co/spaces/tencent/Penguin-VL)
 [![Hugging Face](https://img.shields.io/badge/🤗-Demo_Space_Zero-F6C343.svg)](https://huggingface.co/spaces/lkeab/Penguin-VL-8B) <br>
 [![Project Page](https://img.shields.io/badge/Project-Page-0EA5E9.svg)](https://penguin-vl.github.io)
-[![hf_paper](https://img.shields.io/badge/🤗-Paper%20In%20HF-8B5CF6.svg)](https://huggingface.co/papers/xxx.xxxx)
+[![hf_paper](https://img.shields.io/badge/🤗-Paper%20In%20HF-8B5CF6.svg)](https://huggingface.co/papers/2603.06569)
 [![arXiv](https://img.shields.io/badge/Arxiv-2603.06569-B91C1C.svg?logo=arXiv)](https://arxiv.org/abs/2603.06569)
 </h5>
 
