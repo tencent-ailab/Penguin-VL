@@ -26,6 +26,15 @@
 
 ---
 
+## 📌 TODO
+
+- [ ] Release Training data
+- [ ] Release Training Code
+- [x] Release Model Checkpoint
+- [x] Release inference code
+
+---
+
 ## ✨ Overview
 
 **Penguin-VL** is a compact vision-language model family built to study how far multimodal efficiency can be pushed by redesigning the **vision encoder**, rather than only scaling data or model size.
