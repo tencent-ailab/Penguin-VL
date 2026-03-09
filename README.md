@@ -29,7 +29,7 @@
 ## 📌 TODO
 
 - [ ] Release Training data
-- [ ] Release Training Code
+- [ ] Release Training code
 - [x] Release Model Checkpoint
 - [x] Release inference code
 
