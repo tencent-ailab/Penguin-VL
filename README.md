@@ -30,7 +30,7 @@
 
 - [ ] Release Training data
 - [ ] Release Training code
-- [x] Release Model Checkpoint
+- [x] Release Model checkpoint
 - [x] Release inference code
 
 ---
