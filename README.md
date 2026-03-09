@@ -306,7 +306,12 @@ This project is released under the [Apache 2.0 License](LICENSE).
 If you use Penguin-VL in your research, please cite:
 
 ```bibtex
-...
+@article{Penguin-VL,
+  title={Penguin-VL: Exploring the Efficiency Limits of VLM with LLM-based Vision Encoders},
+  author={Boqiang Zhang and Lei Ke and Ruihan Yang and Qi Gao and Tianyuan Qu and Rossell Chen and Dong Yu and Leowei Huang},
+  journal={arXiv preprint arXiv:2603.06569},
+  year={2026}
+}
 ```
 
 ---
