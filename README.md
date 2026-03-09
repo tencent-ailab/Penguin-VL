@@ -9,8 +9,8 @@
 [![Hugging Face](https://img.shields.io/badge/🤗-2B_Model-F6C343.svg)](https://huggingface.co/tencent/Penguin-VL-2B)
 [![Hugging Face](https://img.shields.io/badge/🤗-8B_Model-F6C343.svg)](https://huggingface.co/tencent/Penguin-VL-8B)
 [![Hugging Face](https://img.shields.io/badge/🤗-Encoder-F6C343.svg)](https://huggingface.co/tencent/Penguin-Encoder) <br>
-[![Hugging Face](https://img.shields.io/badge/🤗-Demo_Space1-F6C343.svg)](https://huggingface.co/spaces/tencent/Penguin-VL)
-[![Hugging Face](https://img.shields.io/badge/🤗-Space2-F6C343.svg)](https://huggingface.co/spaces/lkeab/Penguin-VL-8B)
+[![Hugging Face](https://img.shields.io/badge/🤗-Demo_Space_L40-F6C343.svg)](https://huggingface.co/spaces/tencent/Penguin-VL)
+[![Hugging Face](https://img.shields.io/badge/🤗-Demo_Space_Zero-F6C343.svg)](https://huggingface.co/spaces/lkeab/Penguin-VL-8B) <br>
 [![Project Page](https://img.shields.io/badge/Project-Page-0EA5E9.svg)](https://penguin-vl.github.io)
 [![hf_paper](https://img.shields.io/badge/🤗-Paper%20In%20HF-8B5CF6.svg)](https://huggingface.co/papers/xxx.xxxx)
 [![arXiv](https://img.shields.io/badge/Arxiv-2603.06569-B91C1C.svg?logo=arXiv)](https://arxiv.org/abs/2603.06569)
