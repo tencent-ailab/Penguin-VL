@@ -20,9 +20,9 @@
 ---
 
 ## 📰 News
-
-* **[2026.03]** Release inference code, vLLM plugin, and Gradio demo for Penguin-VL.
-* **[2026.03]** Release [Penguin-VL-2B](https://huggingface.co/tencent/Penguin-VL-2B), [Penguin-VL-8B](https://huggingface.co/tencent/Penguin-VL-8B), and [Penguin Vision Encoder](https://huggingface.co/tencent/Penguin-Encoder) on Hugging Face.
+* **[2026.03.10]** Penguin-VL got **`#1 Paper of the day`** in [huggingface daily paper](https://huggingface.co/papers/date/2026-03-09).
+* **[2026.03.09]** Release inference code, vLLM plugin, and Gradio demo for Penguin-VL.
+* **[2026.03.09]** Release [Penguin-VL-2B](https://huggingface.co/tencent/Penguin-VL-2B), [Penguin-VL-8B](https://huggingface.co/tencent/Penguin-VL-8B), and [Penguin Vision Encoder](https://huggingface.co/tencent/Penguin-Encoder) on Hugging Face.
 
 ---
 
