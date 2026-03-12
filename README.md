@@ -9,7 +9,6 @@
 [![Hugging Face](https://img.shields.io/badge/🤗-2B_Model-F6C343.svg)](https://huggingface.co/tencent/Penguin-VL-2B)
 [![Hugging Face](https://img.shields.io/badge/🤗-8B_Model-F6C343.svg)](https://huggingface.co/tencent/Penguin-VL-8B)
 [![Hugging Face](https://img.shields.io/badge/🤗-Encoder-F6C343.svg)](https://huggingface.co/tencent/Penguin-Encoder)
-[![ModelScope](https://img.shields.io/badge/ModelScope-Model-blue)](https://www.modelscope.cn/collections/cyrilsterling/Penguin-VL) <br>
 [![Hugging Face](https://img.shields.io/badge/🤗-Demo_Space_L40-F6C343.svg)](https://huggingface.co/spaces/tencent/Penguin-VL)
 [![Hugging Face](https://img.shields.io/badge/🤗-Demo_Space_Zero-F6C343.svg)](https://huggingface.co/spaces/lkeab/Penguin-VL-8B) <br>
 [![Project Page](https://img.shields.io/badge/Project-Page-blue?style=plastic&logo=Google%20chrome&logoColor=blue)](https://penguin-vl.github.io)
