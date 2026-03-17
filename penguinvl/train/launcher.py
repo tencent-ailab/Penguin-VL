@@ -40,10 +40,8 @@ from torch.utils.data import Dataset
 from transformers import CONFIG_MAPPING, MODEL_FOR_CAUSAL_LM_MAPPING, PROCESSOR_MAPPING
 
 from penguinvl.constants import (IGNORE_INDEX,
-    NUM_FRAMES, DEFAULT_IMAGE_TOKEN, DEFAULT_VIDEO_TOKEN, 
-    DEFAULT_AUDIO_TOKEN, AUDIO_START_TOKEN, AUDIO_END_TOKEN)
-from penguinvl.mm_utils import (load_images, load_video, load_audio,
-                                  tokenizer_multimodal_token)
+    NUM_FRAMES, DEFAULT_IMAGE_TOKEN, DEFAULT_VIDEO_TOKEN)
+from penguinvl.mm_utils import (load_images, load_video)
 from penguinvl.model import *
 from penguinvl.train.trainer import (
     PenguinVLTrainer, find_all_linear_names, get_peft_state_maybe_zero_3,

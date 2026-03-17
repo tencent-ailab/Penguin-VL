@@ -167,7 +167,7 @@ def get_peft_state_non_lora_maybe_zero_3(named_params, require_grad_only=True):
 def find_all_linear_names(model):
     cls = torch.nn.Linear
     lora_module_names = set()
-    multimodal_keywords = ['vision_projector', 'vision_encoder', 'vision_resampler', 'audio_projector', 'audio_encoder']
+    multimodal_keywords = ['vision_projector', 'vision_encoder']
     for name, module in model.named_modules():
         if any(mm_keyword in name for mm_keyword in multimodal_keywords):
             continue
