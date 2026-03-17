@@ -288,7 +288,7 @@ class Videollama3VisionEncoder(nn.Module):
         else:
             # uncertain whether flash-attention-2 is supported during inference phase.
             self.attn_implementation = 'sdpa' # 'eager'
-            self.cfg_only = Videollama3VisionEncoderConfig.from_pretrained(self.vision_encoder_name)
+            self.cfg_only = AutoConfig.from_pretrained(self.vision_encoder_name)
 
     def load_model(self, args):
         if self.is_loaded:
