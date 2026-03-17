@@ -1,16 +1,19 @@
-import os
-import json
-import argparse
-from multiprocessing import Pool, cpu_count
-from functools import partial
-from tqdm import tqdm
-import math
-import pickle
-import time
-import torch
-import subprocess
-from transformers import AutoProcessor, AutoTokenizer
+from __future__ import annotations
 
+import argparse
+import json
+import math
+import os
+import pickle
+import subprocess
+import tempfile
+import time
+from functools import partial
+from multiprocessing import Pool, cpu_count
+
+import torch
+from tqdm import tqdm
+from transformers import AutoTokenizer
 
 try:
     from PIL import Image
@@ -18,331 +21,309 @@ except ImportError:
     raise SystemExit("Please install Pillow first: pip install pillow")
 
 
-def init_worker(model_path):
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+_IMAGE_PATCH_SIZE = 14
+_VIDEO_PATCH_SIZE = 28
+_MAX_VISUAL_TOKENS = 10_240
+
+
+# ---------------------------------------------------------------------------
+# Multiprocessing worker helpers
+# ---------------------------------------------------------------------------
+
+def _init_worker(model_path: str) -> None:
     global _tokenizer, _model_path
     _model_path = model_path
     try:
         _tokenizer = AutoTokenizer.from_pretrained(model_path)
-        print(f"Process {os.getpid()}: Tokenizer loaded successfully")
     except Exception as e:
-        print(f"Process {os.getpid()}: Failed to load tokenizer: {e}")
+        print(f"[pid {os.getpid()}] Failed to load tokenizer: {e}")
         _tokenizer = None
 
 
-def print_statistics(lengths_tensor):
-    print(f"Statistics:")
-    print(f"  Min length: {lengths_tensor.min().item()}")
-    print(f"  Max length: {lengths_tensor.max().item()}")
-    print(f"  Mean length: {lengths_tensor.float().mean().item():.2f}")
-    print(f"  Median length: {lengths_tensor.median().item()}")
-
-
-def process_jsonl_lengths_streaming_multiprocess(jsonl_path, model_path, output_path,
-                                                num_processes=None, chunk_size=100000):
-    """
-    Streaming multiprocess processing version - large file friendly
-    The file is divided into chunks, and each process handles one chunk
-
-    Args:
-        jsonl_path: JSONL file path
-        model_path: tokenizer model path
-        output_path: output tensor save path
-        num_processes: number of processes
-        chunk_size: number of lines per chunk
-    """
-    
-    if num_processes is None:
-        num_processes = min(cpu_count(), 16)
-    
-    print(f"Using streaming multiprocess with {num_processes} processes")
-    print(f"Chunk size: {chunk_size:,} lines per chunk")
-    
-    print("Counting total lines...")
-    with open(jsonl_path, 'r', encoding='utf-8') as f:
-        total_lines = sum(1 for _ in f)
-    print(f"Total lines: {total_lines:,}")
-    
-    print("Creating chunks...")
-    chunk_files = []
-    chunk_count = 0
-    
-    try:
-        with open(jsonl_path, 'r', encoding='utf-8') as f:
-            current_chunk = []
-            start_idx = 0
-            
-            for line_idx, line in enumerate(f):
-                current_chunk.append((line_idx, line.strip()))
-                
-                if len(current_chunk) >= chunk_size or line_idx == total_lines - 1:
-                    chunk_file = f"temp_chunk_{chunk_count}.pkl"
-                    with open(chunk_file, 'wb') as cf:
-                        pickle.dump(current_chunk, cf)
-                    chunk_files.append((chunk_file, start_idx, len(current_chunk)))
-                    
-                    current_chunk = []
-                    start_idx = line_idx + 1
-                    chunk_count += 1
-        
-        print(f"Created {len(chunk_files)} chunks")
-        
-        print("Processing chunks...")
-        with Pool(processes=num_processes, initializer=init_worker, initargs=(model_path,)) as pool:
-            chunk_results = list(tqdm(
-                pool.imap(process_chunk_file, [(cf[0], cf[1]) for cf in chunk_files]),
-                total=len(chunk_files),
-                desc="Processing chunks"
-            ))
-    
-    finally:
-        for chunk_file, _, _ in chunk_files:
-            if os.path.exists(chunk_file):
-                try:
-                    os.remove(chunk_file)
-                except Exception as e:
-                    print(f"Warning: Failed to remove {chunk_file}: {e}")
-    
-    print("Merging results...")
-    lengths = [0] * total_lines
-    
-    for chunk_result in chunk_results:
-        if chunk_result:
-            for line_idx, length in chunk_result:
-                lengths[line_idx] = length
-    
-    print("Saving final tensor...")
-    lengths_tensor = torch.tensor(lengths, dtype=torch.long)
-    torch.save(lengths_tensor, output_path)
-    
-    print(f"Lengths saved to: {output_path}")
-    print(f"Tensor shape: {lengths_tensor.shape}")
-    print_statistics(lengths_tensor)
-    
-    print("Merging results...")
-    lengths = [0] * total_lines
-    
-    for chunk_result in chunk_results:
-        for line_idx, length in chunk_result:
-            lengths[line_idx] = length
-    
-    print("Saving final tensor...")
-    lengths_tensor = torch.tensor(lengths, dtype=torch.long)
-    torch.save(lengths_tensor, output_path)
-    
-    print(f"Lengths saved to: {output_path}")
-    print(f"Tensor shape: {lengths_tensor.shape}")
-    print_statistics(lengths_tensor)
-
-def process_chunk_file(args):
-    """
-    Process a chunk file
-    Args:
-        args: (chunk_file_path, start_idx)
-    Returns:
-        [(line_idx, length), ...]
-    """
+def _ensure_tokenizer() -> None:
+    """Lazily initialise the tokenizer if the worker init failed."""
     global _tokenizer, _model_path
-    
-    chunk_file, start_idx = args
-    
-    if '_tokenizer' not in globals() or _tokenizer is None:
-        print(f"Warning: Tokenizer not initialized in process {os.getpid()}, initializing now...")
+    if globals().get("_tokenizer") is None:
+        print(f"[pid {os.getpid()}] Tokenizer not ready — retrying…")
         _tokenizer = AutoTokenizer.from_pretrained(_model_path)
-    
-    if not os.path.exists(chunk_file):
-        print(f"Error: Chunk file does not exist: {chunk_file}")
-        return []
-    
+
+
+# ---------------------------------------------------------------------------
+# Sequence-length computation
+# ---------------------------------------------------------------------------
+
+def _visual_token_count(h: int, w: int, frames: int | None) -> int:
+    patch = _VIDEO_PATCH_SIZE if frames is not None else _IMAGE_PATCH_SIZE
+    tokens = math.ceil(h / patch) * math.ceil(w / patch) * (frames or 1)
+    return min(tokens, _MAX_VISUAL_TOKENS)
+
+
+def _process_chunk(chunk_file: str) -> list[tuple[int, int]]:
+    _ensure_tokenizer()
+
     try:
-        with open(chunk_file, 'rb') as f:
-            chunk_data = pickle.load(f)
+        with open(chunk_file, "rb") as f:
+            chunk_data: list[tuple[int, str]] = pickle.load(f)
     except Exception as e:
-        print(f"Error loading chunk file {chunk_file}: {e}")
+        print(f"[pid {os.getpid()}] Cannot load {chunk_file}: {e}")
         return []
-    
-    results = []
+
+    results: list[tuple[int, int]] = []
     for line_idx, line_content in chunk_data:
         try:
             data = json.loads(line_content)
-            length = 0
-            for conv in data.get('conversations', []):
-                conversation_value = conv['value']
-                length += len(_tokenizer.encode(conversation_value))
-            
-            if not data.get('conversations', []):
-                length = 0
-
-            h, w = data.get('height', None), data.get('width', None)
-            t = data.get('frames', None)
-            img_length = 0
-            if h is not None and w is not None:
-                if t is not None:
-                    img_length = min(10240, math.ceil(h/28)*math.ceil(w/28)*t)
-                else:
-                    img_length = min(10240, math.ceil(h/14)*math.ceil(w/14))
-            length += img_length
-            results.append((line_idx, length))
+            text_tokens = sum(
+                len(_tokenizer.encode(conv["value"]))
+                for conv in data.get("conversations", [])
+            )
+            h, w = data.get("height"), data.get("width")
+            vis_tokens = (
+                _visual_token_count(h, w, data.get("frames"))
+                if h is not None and w is not None
+                else 0
+            )
+            results.append((line_idx, text_tokens + vis_tokens))
         except Exception as e:
-            print(f"Error processing line {line_idx}: {e}")
+            print(f"[pid {os.getpid()}] Error on line {line_idx}: {e}")
             results.append((line_idx, 0))
-    
+
     return results
 
 
-def get_length(jsonl_path, model_path, output_path, num_processes=1):
-    print(f"Processing file: {jsonl_path}")
-    print(f"Using model: {model_path}")
-    print(f"Output path: {output_path}")
-    
+def _print_stats(tensor: torch.Tensor) -> None:
+    print(
+        f"  min={tensor.min().item()}"
+        f"  max={tensor.max().item()}"
+        f"  mean={tensor.float().mean().item():.1f}"
+        f"  median={tensor.median().item()}"
+    )
+
+
+def compute_lengths(
+    jsonl_path: str,
+    model_path: str,
+    output_path: str,
+    num_processes: int | None = None,
+    chunk_size: int = 50_000,
+) -> None:
+    """Tokenize every sample in *jsonl_path* and save per-line token lengths."""
+    num_processes = num_processes or min(cpu_count(), 16)
+    print(f"Processes: {num_processes}  |  chunk size: {chunk_size:,}")
+
+    with open(jsonl_path, "r", encoding="utf-8") as f:
+        total_lines = sum(1 for _ in f)
+    print(f"Total lines: {total_lines:,}")
+
+    tmp_dir = tempfile.mkdtemp(prefix="seqlen_chunks_")
+    chunk_files: list[str] = []
+
     try:
-        start_time = time.time()
-        
-        process_jsonl_lengths_streaming_multiprocess(
-            jsonl_path, model_path, output_path,
-            num_processes=num_processes,
-            chunk_size=50000
-        )
-            
-        end_time = time.time()
-        print(f"Total processing time: {end_time - start_time:.2f} seconds")
-    except Exception as e:
-        print(f"Error occurred: {e}")
+        # Split input into temporary pickle chunks for parallel processing.
+        with open(jsonl_path, "r", encoding="utf-8") as f:
+            chunk: list[tuple[int, str]] = []
+            for line_idx, line in enumerate(f):
+                chunk.append((line_idx, line.strip()))
+                if len(chunk) >= chunk_size:
+                    _flush_chunk(chunk, tmp_dir, chunk_files)
+                    chunk = []
+            if chunk:
+                _flush_chunk(chunk, tmp_dir, chunk_files)
+
+        print(f"Chunks: {len(chunk_files)}")
+
+        with Pool(
+            processes=num_processes,
+            initializer=_init_worker,
+            initargs=(model_path,),
+        ) as pool:
+            chunk_results = list(
+                tqdm(
+                    pool.imap(_process_chunk, chunk_files),
+                    total=len(chunk_files),
+                    desc="Processing chunks",
+                )
+            )
+    finally:
+        for path in chunk_files:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+        try:
+            os.rmdir(tmp_dir)
+        except OSError:
+            pass
+
+    lengths = [0] * total_lines
+    for chunk_result in chunk_results:
+        for line_idx, length in chunk_result:
+            lengths[line_idx] = length
+
+    tensor = torch.tensor(lengths, dtype=torch.long)
+    torch.save(tensor, output_path)
+    print(f"Saved → {output_path}  shape={tensor.shape}")
+    _print_stats(tensor)
+
+
+def _flush_chunk(
+    chunk: list[tuple[int, str]],
+    tmp_dir: str,
+    chunk_files: list[str],
+) -> None:
+    path = os.path.join(tmp_dir, f"chunk_{len(chunk_files)}.pkl")
+    with open(path, "wb") as f:
+        pickle.dump(chunk, f)
+    chunk_files.append(path)
+
+
+def get_length(
+    jsonl_path: str,
+    model_path: str,
+    output_path: str,
+    num_processes: int = 1,
+) -> None:
+    print(f"Input : {jsonl_path}\nModel : {model_path}\nOutput: {output_path}")
+    t0 = time.time()
+    try:
+        compute_lengths(jsonl_path, model_path, output_path, num_processes=num_processes)
+    except Exception:
         import traceback
         traceback.print_exc()
-    
-    print("Processing completed!")
+    print(f"Done in {time.time() - t0:.1f}s")
 
 
-def resolve_path(img_list, root):
-    if not img_list:
+# ---------------------------------------------------------------------------
+# Metadata enrichment (image / video dimensions)
+# ---------------------------------------------------------------------------
+
+def _resolve_path(paths: list[str] | str | None, root: str) -> str | None:
+    if not paths:
         return None
-    p = img_list[0]
-    if root:
-        return os.path.join(root, p)
-    return p
+    first = paths[0] if isinstance(paths, list) else paths
+    return os.path.join(root, first) if root else first
 
-def fast_ffprobe(video_path):
+
+def _ffprobe(video_path: str) -> dict:
     cmd = [
-        'ffprobe', '-v', 'error',
-        '-select_streams', 'v:0',
-        '-show_entries', 'stream=duration,width,height,avg_frame_rate',
-        '-of', 'json', video_path
+        "ffprobe", "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=duration,width,height,avg_frame_rate",
+        "-of", "json", video_path,
     ]
-    try:
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=2)
-        stream = json.loads(result.stdout)['streams'][0]
-        return {
-            "file_path": video_path,
-            "height": int(stream.get("height", 0)),
-            "width": int(stream.get("width", 0)),
-            "duration": round(float(stream.get("duration", 0)), 2),
-        }
-    except Exception as e:
-        return {"file_path": video_path, "video_error": str(e)}
+    result = subprocess.run(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=2
+    )
+    stream = json.loads(result.stdout)["streams"][0]
+    return {
+        "height": int(stream.get("height", 0)),
+        "width": int(stream.get("width", 0)),
+        "duration": round(float(stream.get("duration", 0)), 2),
+    }
 
-def get_wh_one(line: str, root: str, modal: str = "image", processor=None, fps=1, max_frames=128):
+
+def _enrich_one(line: str, root: str, fps: int, max_frames: int) -> str | None:
+    """Attach width/height (and frames for video) to a single JSONL record."""
     line = line.strip()
     if not line:
         return None
     try:
         obj = json.loads(line)
-    except Exception as e:
-        print(f"json loads failed: {e}, line: {line}")
+    except json.JSONDecodeError as e:
+        print(f"JSON parse error: {e}")
         return None
 
     if "image" in obj:
-        modal = "image"
-    elif "video" in obj:
-        modal = "video"
-    else:
-        modal = "text"
-
-    if modal == "image":
-        img_path = resolve_path(obj.get("image", []), root)
+        img_path = _resolve_path(obj["image"], root)
         if not img_path:
-            print(f"no image find, line: {line}")
+            print(f"No image path in record: {line}")
             return None
-
         try:
             with Image.open(img_path) as im:
-                w, h = im.size
-            obj["width"] = int(w)
-            obj["height"] = int(h)
+                obj["width"], obj["height"] = im.size
         except Exception as e:
-            print(f"open_image_failed: {e}")
+            print(f"Cannot open image {img_path}: {e}")
             return None
 
-        return json.dumps(obj) + "\n"
-    elif modal == "video":
-        video_path = resolve_path(obj.get("video", []), root)
+    elif "video" in obj:
+        video_path = _resolve_path(obj["video"], root)
         if not video_path:
-            print(f"no video find, line: {line}")
+            print(f"No video path in record: {line}")
             return None
-
         try:
-            info = fast_ffprobe(video_path)
-            h, w = info.get("height", 0), info.get("width", 0)
-            obj["width"] = int(w)
-            obj["height"] = int(h)
-            obj["frames"] = max(max_frames, math.floor(info.get("duration", 0) * fps))
+            info = _ffprobe(video_path)
+            obj["width"] = info["width"]
+            obj["height"] = info["height"]
+            obj["frames"] = max(max_frames, math.floor(info["duration"] * fps))
         except Exception as e:
-            print(f"load_video_failed: {e}, path: {video_path}")
+            print(f"Cannot probe video {video_path}: {e}")
             return None
 
-        return json.dumps(obj) + "\n"
-    elif modal == "text":
-        return json.dumps(obj) + "\n"
-    
+    # text-only samples pass through unchanged
+    return json.dumps(obj) + "\n"
 
-def get_meta(num_processes, args):
+
+def get_meta(args: argparse.Namespace, num_processes: int) -> str:
     if not os.path.exists(args.input):
-        raise SystemExit(f"Input file does not exist: {args.input}")
+        raise SystemExit(f"Input file not found: {args.input}")
 
-    process_fn = partial(get_wh_one, root=args.root, fps=args.fps, max_frames=args.max_frames)
+    process_fn = partial(_enrich_one, root=args.root, fps=args.fps, max_frames=args.max_frames)
+    output_path = args.input.replace(".jsonl", "_meta.jsonl")
 
-    with open(args.input, "r", encoding="utf-8") as fin:
-        total_lines = sum(1 for _ in fin)
+    with open(args.input, "r", encoding="utf-8") as f:
+        total_lines = sum(1 for _ in f)
 
-    output_filename = args.input.replace(".jsonl", "_meta.jsonl")
-
-    with open(args.input, "r", encoding="utf-8") as fin, \
-         open(output_filename, "w", encoding="utf-8") as fout, \
-         Pool(processes=num_processes) as pool:
-
-        for out_line in tqdm(
+    with (
+        open(args.input, "r", encoding="utf-8") as fin,
+        open(output_path, "w", encoding="utf-8") as fout,
+        Pool(processes=num_processes) as pool,
+    ):
+        for line in tqdm(
             pool.imap_unordered(process_fn, fin, chunksize=args.chunksize),
             total=total_lines,
-            desc="Processing",
-            unit="line"
+            desc="Enriching metadata",
+            unit="line",
         ):
-            if out_line is not None:
-                fout.write(out_line)
+            if line is not None:
+                fout.write(line)
 
-    print(f"Complete! Results are written in {output_filename}")
-    return output_filename
+    print(f"Metadata saved → {output_path}")
+    return output_path
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+def _build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        description="Compute per-sample sequence lengths for a JSONL dataset."
+    )
+    p.add_argument("--input", "-i", required=True, help="Input JSONL file")
+    p.add_argument("--root", "-r", default="", help="Root directory for media files")
+    p.add_argument("--fps", type=int, default=1, help="Frames per second for video sampling")
+    p.add_argument("--max-frames", type=int, default=180, help="Minimum frame count for videos")
+    p.add_argument("--tk-path", default="Qwen/Qwen3-0.6B", help="Tokenizer model path or HuggingFace ID")
+    p.add_argument("--chunksize", type=int, default=100, help="imap_unordered chunk size")
+    return p
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--input", "-i", required=True, help="input jsonl file")
-    parser.add_argument("--root", "-r", default="", help="image root directory (optional)")
-    parser.add_argument("--fps", type=int, default=1,
-                        help="fps")
-    parser.add_argument("--max-frames", type=int, default=180,
-                        help="max-frames")
-    parser.add_argument("--tk-path", "-o", default="Qwen/Qwen3-0.6B")
-    parser.add_argument("--chunksize", type=int, default=100,
-                        help="chunksize of imap_unordered")
-    args = parser.parse_args()
-
+    args = _build_parser().parse_args()
 
     num_processes = min(cpu_count(), 128)
-    print(f"Detected {cpu_count()} CPU cores, using {num_processes} processes")
+    print(f"CPU cores: {cpu_count()}  →  using {num_processes} processes")
 
-    output_filename = get_meta(num_processes, args)
+    meta_path = get_meta(args, num_processes)
 
-    lengths_path = os.path.join(args.root, "lengths.pt")
-    get_length(output_filename, args.tk_path, lengths_path, num_processes=num_processes)
+    lengths_dir = args.root if args.root else os.path.dirname(os.path.abspath(args.input))
+    lengths_path = os.path.join(lengths_dir, "lengths.pt")
 
-    length = torch.load(lengths_path)
-    torch.save(length.argsort(), lengths_path)
+    get_length(meta_path, args.tk_path, lengths_path, num_processes=num_processes)
+
+    lengths = torch.load(lengths_path)
+    torch.save(lengths.argsort(), lengths_path)
+    print(f"Sorted indices saved → {lengths_path}")
