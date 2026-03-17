@@ -6,7 +6,8 @@ import torch.nn as nn
 import math
 from transformers import (CLIPImageProcessor, CLIPVisionConfig,
                           CLIPVisionModel, SiglipImageProcessor,
-                          SiglipVisionConfig, SiglipVisionModel)
+                          SiglipVisionConfig, SiglipVisionModel,
+                          AutoConfig, AutoModel, AutoImageProcessor)
 
 from .penguinvl_encoder import (PenguinVLVisionEncoderConfig, PenguinVLVisionEncoderModel, PenguinVLImageProcessor)
 
@@ -271,6 +272,81 @@ class PenguinVLVisionEncoder(nn.Module):
         return -1
     
 
+class Videollama3VisionEncoder(nn.Module):
+
+    def __init__(self, vision_encoder, args, delay_load=False):
+        super().__init__()
+
+        self.is_loaded = False
+
+        self.vision_encoder_name = vision_encoder
+        self.args = args
+
+        if not delay_load:
+            self.attn_implementation = getattr(args, 'mm_attn_implementation', 'flash_attention_2')
+            self.load_model(self.args)
+        else:
+            # uncertain whether flash-attention-2 is supported during inference phase.
+            self.attn_implementation = 'sdpa' # 'eager'
+            self.cfg_only = AutoConfig.from_pretrained(self.vision_encoder_name, trust_remote_code=True)
+
+    def load_model(self, args):
+        if self.is_loaded:
+            print('Vision tower is already loaded, `load model` call again, skipping.')
+            return
+
+        self.image_processor = AutoImageProcessor.from_pretrained(self.vision_encoder_name, trust_remote_code=True)
+
+        # merge_size is fixed to 1 for STAGE1, STAGE1.5, STAGE2, STAGE3 in encoder and can be modified in connector.
+        self.cfg_only = AutoConfig.from_pretrained(self.vision_encoder_name, trust_remote_code=True)
+
+        self.vision_encoder = AutoModel.from_pretrained(
+            self.vision_encoder_name,
+            trust_remote_code=True,
+            torch_dtype=args.torch_dtype,
+            attn_implementation=self.attn_implementation)
+
+        self.is_loaded = True
+
+    def forward(self, pixel_values, grid_sizes, merge_sizes, **kwargs):
+        image_features = self.vision_encoder(pixel_values, grid_sizes, merge_sizes)
+        return image_features
+
+    @property
+    def dummy_feature(self):
+        return torch.zeros(1, self.hidden_size, device=self.device, dtype=self.dtype)
+
+    @property
+    def dtype(self):
+        return self.vision_encoder.dtype
+
+    @property
+    def device(self):
+        return self.vision_encoder.device
+
+    @property
+    def config(self):
+        if self.is_loaded:
+            return self.vision_encoder.config
+        else:
+            return self.cfg_only
+
+    @property
+    def hidden_size(self):
+        return self.config.hidden_size
+
+    @property
+    def num_patches(self):
+        return -1
+
+    @property
+    def num_patches_per_side(self):
+        return -1
+
+    @property
+    def image_size(self):
+        return -1
+    
 
 def build_vision_encoder(vision_encoder_cfg, **kwargs):
     vision_encoder = getattr(vision_encoder_cfg, 'mm_vision_encoder', getattr(vision_encoder_cfg, 'vision_encoder', None))
@@ -279,8 +355,10 @@ def build_vision_encoder(vision_encoder_cfg, **kwargs):
         vision_encoder = CLIPVisionEncoder(vision_encoder, args=vision_encoder_cfg, **kwargs)
     elif 'siglip' in vision_encoder:
         vision_encoder = SiglipVisionEncoder(vision_encoder, args=vision_encoder_cfg, **kwargs)
-    elif 'penguinvl' in vision_encoder.lower():
+    elif 'penguin' in vision_encoder.lower():
         vision_encoder = PenguinVLVisionEncoder(vision_encoder, args=vision_encoder_cfg, **kwargs)
+    elif 'videollama3' in vision_encoder.lower() or 'vl3-siglip-navit' in vision_encoder.lower():
+        vision_encoder = Videollama3VisionEncoder(vision_encoder, args=vision_encoder_cfg, **kwargs)
     else:
         raise ValueError(f'Unknown vision encoder: {vision_encoder}')
 

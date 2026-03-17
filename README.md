@@ -19,6 +19,7 @@
 ---
 
 ## 📰 News
+* **[2026.03.17]** 🔥🔥 We realease **training code** for Penguin-VL, details see [§ Training](#training).
 * **[2026.03.10]** Penguin-VL got **`#1 Paper of the day`** in [huggingface daily paper](https://huggingface.co/papers/date/2026-03-09).
 * **[2026.03.09]** Release inference code, vLLM plugin, and Gradio demo for Penguin-VL.
 * **[2026.03.09]** Release [Penguin-VL-2B](https://huggingface.co/tencent/Penguin-VL-2B), [Penguin-VL-8B](https://huggingface.co/tencent/Penguin-VL-8B), and [Penguin Vision Encoder](https://huggingface.co/tencent/Penguin-Encoder) on Hugging Face.
@@ -28,7 +29,7 @@
 ## 📌 TODO
 
 - [ ] Release training data
-- [ ] Release training code
+- [x] Release training code
 - [x] Release model checkpoint
 - [x] Release inference code
 
@@ -279,6 +280,246 @@ CUDA_VISIBLE_DEVICES=0,1 python inference/test_vllm_infer.py --model-path tencen
 | `--max-model-len` | Max context length |
 | `--gpu-memory-utilization` | GPU memory fraction (0–1) |
 
+---
+<a id="training"></a>
+## 🗝️ Training
+### Training Pipeline Overview
+
+Penguin-VL adopts a **4-stage curriculum**:
+
+| Stage | Script | Description | Trainable Modules |
+| :---- | :----- | :---------- | :---------------- |
+| **Stage 1** | `vision_encoder_pretrain.sh` | Vision encoder warm-up with reconstruction / distillation losses. The LLM-initialized encoder learns to extract visual features under supervision from a SigLIP teacher. | Vision encoder + projector |
+| **Stage 2** | `vision_encoder_pretrain_hres.sh` | High-resolution alignment. Continues from Stage 1 with higher sequence budgets to handle dense text and document images. | All parameters |
+| **Stage 3** | `pretrain.sh` | Full multi-modal pre-training on large-scale image and video corpora. | All parameters |
+| **Stage 4** | `sft.sh` | Supervised fine-tuning (instruction tuning) on high-quality chat/task data. | All parameters |
+
+---
+
+### Step 1: Prepare Training Data
+
+Organize all images and videos under a single `data_root` directory:
+
+```bash
+data_root/
+├── images/
+│   ├── image_0001.jpg
+│   └── ...
+├── videos/
+│   ├── video_0001.mp4
+│   └── ...
+├── annotations_image.jsonl
+├── annotations_video.jsonl
+└── ...
+```
+
+Each annotation file is a JSONL file where every line is a JSON object in the following format:
+
+**Image example:**
+```json
+{
+    "id": "sample_0001",
+    "image": ["images/image_0001.jpg"],
+    "conversations": [
+        {"from": "human", "value": "<image>\nWhat is shown in the image?"},
+        {"from": "gpt",   "value": "The image shows a golden retriever playing on a beach."}
+    ]
+}
+```
+
+**Video example:**
+```json
+{
+    "id": "sample_0002",
+    "video": ["videos/video_0001.mp4"],
+    "conversations": [
+        {"from": "human", "value": "<video>\nBriefly describe what happens in the video."},
+        {"from": "gpt",   "value": "A person assembles a bicycle in a garage, checking each component carefully."}
+    ]
+}
+```
+
+**Text-only example:**
+```json
+{
+    "id": "sample_0003",
+    "conversations": [
+        {"from": "human", "value": "What is the capital of France?"},
+        {"from": "gpt",   "value": "The capital of France is Paris."}
+    ]
+}
+```
+
+> **Notes**
+> - Multiple annotation files can be passed simultaneously to `--data_path`.
+> - If `<image>` / `<video>` tokens are absent from the first user turn, they will be prepended automatically.
+> - Both `.json` (list) and `.jsonl` (one object per line) formats are supported. `.jsonl` with HuggingFace `datasets` is recommended for large corpora.
+
+---
+
+### Step 1.5: (Optional) Pre-compute Sequence Lengths
+
+`penguinvl/tools/calculate_seqlen.py` is a preprocessing utility that runs **before training** to pre-compute the approximate sequence length of every sample in a JSONL annotation file. The resulting length index can be passed to `--data_lengths_path` so the dataloader can sort samples by length, reducing padding waste and speeding up training.
+
+The script runs in two phases internally:
+
+1. **Metadata extraction** — resolves each sample's image resolution (via PIL) or video dimensions / frame count (via `ffprobe`), then writes an enriched `<input>_meta.jsonl` with `width`, `height`, and `frames` fields added to each record.
+2. **Length estimation** — tokenizes all conversation text with the specified tokenizer and adds an estimated visual token count based on the resolution, then saves a length-sorted index tensor to `lengths.pt`.
+
+Both phases run in parallel across all available CPU cores.
+
+#### Usage
+
+```bash
+python penguinvl/tools/calculate_seqlen.py \
+    --input  /path/to/annotations.jsonl \
+    --root   /path/to/data_root \
+    --tk-path Qwen/Qwen3-0.6B \
+    --fps 1 \
+    --max-frames 180
+```
+
+| Argument | Description | Default |
+| :------- | :---------- | :------ |
+| `--input` / `-i` | Input JSONL annotation file | *required* |
+| `--root` / `-r` | Root directory for resolving image/video paths | `""` |
+| `--tk-path` | Tokenizer path or HuggingFace model ID used for text length estimation | `Qwen/Qwen3-0.6B` |
+| `--fps` | Frame rate used to estimate the number of video frames | `1` |
+| `--max-frames` | Maximum frame count cap for video length estimation | `180` |
+| `--chunksize` | Lines per worker chunk for `imap_unordered` | `100` |
+
+#### Outputs
+
+| File | Description |
+| :--- | :---------- |
+| `<input>_meta.jsonl` | Copy of the input JSONL with `width`, `height`, and `frames` fields added to each record. |
+| `<root>/lengths.pt` | A `torch.LongTensor` of **length-sorted sample indices**. Pass this to `--data_lengths_path` in the training script. |
+
+#### Connecting to the Training Script
+
+After generating `lengths.pt`, add `--data_lengths_path` and `--group_by_modality_length True` to your training script:
+
+```bash
+--group_by_modality_length True
+--data_lengths_path /path/to/data_root/lengths.pt
+```
+
+This enables length-sorted batching, which significantly reduces padding overhead when training on datasets with high length variance (e.g. mixed image + video data).
+
+---
+
+### Step 2: Configure Training Scripts
+
+Training scripts live in `scripts/train/`. Edit the following variables at the top of each script before launching:
+
+| Variable | Description | Example |
+| :------- | :---------- | :------ |
+| `DATA_DIR` | Root directory of your dataset | `/data/penguinvl_data` |
+| `OUTP_DIR` | Root directory for checkpoints | `work_dirs` |
+| `WANDB_PROJECT` | W&B project name | `penguinvl_qwen3_exp` |
+| `ARG_WORLD_SIZE` | Number of nodes | `1` |
+| `ARG_NPROC_PER_NODE` | Number of GPUs per node | `8` |
+| `GLOBAL_BATCH_SIZE` | Effective global batch size | `128` |
+| `LOCAL_BATCH_SIZE` | Per-GPU batch size | `2` |
+
+Gradient accumulation is derived automatically:
+```
+GRADIENT_ACCUMULATION_STEPS = GLOBAL_BATCH_SIZE / (WORLD_SIZE × NPROC_PER_NODE × LOCAL_BATCH_SIZE)
+```
+
+---
+
+### Step 3: Run Training
+
+#### Stage 1 — Vision Encoder Pretraining
+
+```bash
+bash scripts/train/vision_encoder_pretrain.sh [NUM_NODES] [NUM_GPUS_PER_NODE]
+```
+
+Key arguments specific to Stage 1:
+```bash
+--model_path        Qwen/Qwen3-1.7B                            # LLM part
+--vision_encoder    Cyril666/SFL-Encoder-Pretrained-Qwen3      # LLM-initialized vision encoder (converted from Qwen/Qwen-0.6B and modified the layer parameter names.)
+--use_reconstruct   True                                       # Enable reconstruction / distillation loss
+--use_vision_teacher True                                      # Enable SigLIP teacher supervision
+--vision_encoder_teacher DAMO-NLP-SG/VL3-SigLIP-NaViT
+--model_max_length  4096
+--mm_max_length     2048
+```
+
+#### Stage 2 — High-Resolution Encoder Pretraining
+
+```bash
+bash scripts/train/vision_encoder_pretrain_hres.sh [NUM_NODES] [NUM_GPUS_PER_NODE]
+```
+
+Loads from `stage_1` checkpoint. Increases context budgets for high-resolution inputs:
+```bash
+--model_max_length  16384
+--mm_max_length     10240
+```
+
+#### Stage 3 — Full Pre-training
+
+```bash
+bash scripts/train/pretrain.sh [NUM_NODES] [NUM_GPUS_PER_NODE]
+```
+
+Loads from `stage_2` checkpoint. All three modules (vision encoder, projector, LLM) are jointly trained.
+
+#### Stage 4 — Supervised Fine-tuning
+
+```bash
+bash scripts/train/sft.sh [NUM_NODES] [NUM_GPUS_PER_NODE]
+```
+
+Loads from `stage_3` checkpoint. Uses high-quality instruction-following data for final alignment.
+
+---
+
+### Key Training Arguments Reference
+
+| Argument | Description | Default |
+| :------- | :---------- | :------ |
+| `--model_type` | Model architecture type | `penguinvl_qwen3` |
+| `--model_path` | Path to LLM backbone or previous stage checkpoint | — |
+| `--vision_encoder` | Path or HF ID of the vision encoder | — |
+| `--vision_projector_type` | Projector architecture | `mlp2x_gelu` |
+| `--use_reconstruct` | Enable visual reconstruction loss (Stage 1) | `False` |
+| `--use_vision_teacher` | Enable distillation from SigLIP teacher (Stage 1) | `False` |
+| `--vision_encoder_teacher` | SigLIP teacher model path | `None` |
+| `--data_path` | Space-separated list of annotation files | — |
+| `--data_folder` | Root folder for all media files | — |
+| `--fps` | Video sampling frame rate | `1` |
+| `--max_frames` | Maximum number of frames per video | `180` |
+| `--image_merge_size` | Token merge factor for images | `1` |
+| `--video_merge_size` | Token merge factor for video frames | `2` |
+| `--model_max_length` | Maximum total sequence length (truncation) | `512` |
+| `--mm_max_length` | Maximum visual token budget per sample | `10240` |
+| `--llm_lr` | Learning rate for the LLM backbone | `None` |
+| `--vision_encoder_lr` | Learning rate for the vision encoder | `None` |
+| `--vision_projector_lr` | Learning rate for the MLP projector | `None` |
+| `--embedding_lr` | Learning rate for embedding layers | `None` |
+| `--deepspeed` | DeepSpeed config path | `scripts/zero1.json` |
+| `--gradient_checkpointing` | Enable gradient checkpointing | `True` |
+| `--use_batch_flattening` | Flatten variable-length sequences in a batch | `True` |
+
+---
+
+### Distributed Training (Multi-node)
+
+The scripts support multi-node training via `torchrun`. Pass `WORLD_SIZE`, `NPROC_PER_NODE`, `MASTER_ADDR`, `MASTER_PORT`, and `RANK` as environment variables or positional arguments:
+
+```bash
+# Node 0 (master)
+WORLD_SIZE=2 NPROC_PER_NODE=8 MASTER_ADDR=<node0_ip> MASTER_PORT=16667 RANK=0 \
+    bash scripts/train/sft.sh
+
+# Node 1
+WORLD_SIZE=2 NPROC_PER_NODE=8 MASTER_ADDR=<node0_ip> MASTER_PORT=16667 RANK=1 \
+    bash scripts/train/sft.sh
+```
 
 ---
 
@@ -288,7 +529,9 @@ CUDA_VISIBLE_DEVICES=0,1 python inference/test_vllm_infer.py --model-path tencen
 .
 ├── penguinvl/                    # Core model and processor code
 │   ├── plugin/vllm/              # vLLM plugin (v0_11_0)
-│   └── ...
+│   ├── tools/                    # Tool scripts
+│   └── train/                    # Training code
+├── scripts/                      # Training scripts
 ├── inference/
 │   ├── example_penguinvl.py      # Transformers inference example
 │   ├── test_vllm_infer.py        # vLLM inference demo
