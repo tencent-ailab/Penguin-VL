@@ -6,7 +6,7 @@ import torch.nn as nn
 import math
 from transformers import (CLIPImageProcessor, CLIPVisionConfig,
                           CLIPVisionModel, SiglipImageProcessor,
-                          SiglipVisionConfig, SiglipVisionModel)
+                          SiglipVisionConfig, SiglipVisionModel, AutoModel)
 
 from .penguinvl_encoder import (PenguinVLVisionEncoderConfig, PenguinVLVisionEncoderModel, PenguinVLImageProcessor)
 
@@ -281,6 +281,8 @@ def build_vision_encoder(vision_encoder_cfg, **kwargs):
         vision_encoder = SiglipVisionEncoder(vision_encoder, args=vision_encoder_cfg, **kwargs)
     elif 'penguinvl' in vision_encoder.lower():
         vision_encoder = PenguinVLVisionEncoder(vision_encoder, args=vision_encoder_cfg, **kwargs)
+    elif 'videollama3' in vision_encoder.lower() or 'vl3-siglip-navit' in vision_encoder.lower():
+        vision_encoder = AutoModel.from_pretrained(vision_encoder, trust_remote_code=True, torch_dtype=torch.bfloat16)
     else:
         raise ValueError(f'Unknown vision encoder: {vision_encoder}')
 
