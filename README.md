@@ -290,9 +290,9 @@ Penguin-VL adopts a **4-stage curriculum**:
 | Stage | Script | Description | Trainable Modules |
 | :---- | :----- | :---------- | :---------------- |
 | **Stage 1** | `vision_encoder_pretrain.sh` | Vision encoder warm-up with reconstruction / distillation losses. The LLM-initialized encoder learns to extract visual features under supervision from a SigLIP teacher. | Vision encoder + projector |
-| **Stage 2** | `vision_encoder_pretrain_hres.sh` | High-resolution alignment. Continues from Stage 1 with higher sequence budgets to handle dense text and document images. | Vision encoder + projector + LLM |
-| **Stage 3** | `pretrain.sh` | Full multi-modal pre-training on large-scale image and video corpora. | Vision encoder + projector + LLM |
-| **Stage 4** | `sft.sh` | Supervised fine-tuning (instruction tuning) on high-quality chat/task data. | Vision encoder + projector + LLM |
+| **Stage 2** | `vision_encoder_pretrain_hres.sh` | High-resolution alignment. Continues from Stage 1 with higher sequence budgets to handle dense text and document images. | All parameters |
+| **Stage 3** | `pretrain.sh` | Full multi-modal pre-training on large-scale image and video corpora. | All parameters |
+| **Stage 4** | `sft.sh` | Supervised fine-tuning (instruction tuning) on high-quality chat/task data. | All parameters |
 
 ---
 
@@ -502,7 +502,6 @@ Loads from `stage_3` checkpoint. Uses high-quality instruction-following data fo
 | `--vision_projector_lr` | Learning rate for the MLP projector | `None` |
 | `--embedding_lr` | Learning rate for embedding layers | `None` |
 | `--deepspeed` | DeepSpeed config path | `scripts/zero1.json` |
-| `--lora_enable` | Enable LoRA fine-tuning | `False` |
 | `--gradient_checkpointing` | Enable gradient checkpointing | `True` |
 | `--use_batch_flattening` | Flatten variable-length sequences in a batch | `True` |
 
