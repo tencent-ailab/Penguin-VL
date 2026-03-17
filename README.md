@@ -19,7 +19,7 @@
 ---
 
 ## 📰 News
-* **[2026.03.17]** 🔥🔥 We realease **training code** for Penguin-VL.
+* **[2026.03.17]** 🔥🔥 We realease **training code** for Penguin-VL, details see [§ Training](#-training).
 * **[2026.03.10]** Penguin-VL got **`#1 Paper of the day`** in [huggingface daily paper](https://huggingface.co/papers/date/2026-03-09).
 * **[2026.03.09]** Release inference code, vLLM plugin, and Gradio demo for Penguin-VL.
 * **[2026.03.09]** Release [Penguin-VL-2B](https://huggingface.co/tencent/Penguin-VL-2B), [Penguin-VL-8B](https://huggingface.co/tencent/Penguin-VL-8B), and [Penguin Vision Encoder](https://huggingface.co/tencent/Penguin-Encoder) on Hugging Face.
