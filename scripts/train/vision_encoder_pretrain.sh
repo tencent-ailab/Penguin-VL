@@ -40,8 +40,8 @@ torchrun --nnodes $WORLD_SIZE \
     -m penguinvl.train.launcher \
     --deepspeed scripts/zero1.json \
     --model_type penguinvl_qwen3 \
-    --model_path ../models/Qwen3-1.7B \
-    --vision_encoder tencent/Penguin-Encoder \
+    --model_path Qwen/Qwen3-1.7B \
+    --vision_encoder Cyril666/SFL-Encoder-Pretrained-Qwen3 \
     --vision_projector_type mlp2x_gelu \
     --use_reconstruct True \
     --use_vision_teacher True \

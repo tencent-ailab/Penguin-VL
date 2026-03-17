@@ -439,10 +439,10 @@ bash scripts/train/vision_encoder_pretrain.sh [NUM_NODES] [NUM_GPUS_PER_NODE]
 
 Key arguments specific to Stage 1:
 ```bash
---model_path        ../models/Qwen3-1.7B        # Text-only LLM used to initialize the vision encoder
---vision_encoder    tencent/Penguin-Encoder      # Penguin-Encoder (already LLM-initialized)
---use_reconstruct   True                         # Enable reconstruction / distillation loss
---use_vision_teacher True                        # Enable SigLIP teacher supervision
+--model_path        Qwen/Qwen3-1.7B                            # LLM part
+--vision_encoder    Cyril666/SFL-Encoder-Pretrained-Qwen3      # LLM-initialized vision encoder (converted from Qwen/Qwen-0.6B and modified the layer parameter names.)
+--use_reconstruct   True                                       # Enable reconstruction / distillation loss
+--use_vision_teacher True                                      # Enable SigLIP teacher supervision
 --vision_encoder_teacher DAMO-NLP-SG/VL3-SigLIP-NaViT
 --model_max_length  4096
 --mm_max_length     2048
