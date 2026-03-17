@@ -288,17 +288,17 @@ class Videollama3VisionEncoder(nn.Module):
         else:
             # uncertain whether flash-attention-2 is supported during inference phase.
             self.attn_implementation = 'sdpa' # 'eager'
-            self.cfg_only = AutoConfig.from_pretrained(self.vision_encoder_name)
+            self.cfg_only = AutoConfig.from_pretrained(self.vision_encoder_name, trust_remote_code=True)
 
     def load_model(self, args):
         if self.is_loaded:
             print('Vision tower is already loaded, `load model` call again, skipping.')
             return
 
-        self.image_processor = AutoImageProcessor.from_pretrained(self.vision_encoder_name)
+        self.image_processor = AutoImageProcessor.from_pretrained(self.vision_encoder_name, trust_remote_code=True)
 
         # merge_size is fixed to 1 for STAGE1, STAGE1.5, STAGE2, STAGE3 in encoder and can be modified in connector.
-        self.cfg_only = AutoConfig.from_pretrained(self.vision_encoder_name)
+        self.cfg_only = AutoConfig.from_pretrained(self.vision_encoder_name, trust_remote_code=True)
 
         self.vision_encoder = AutoModel.from_pretrained(
             self.vision_encoder_name,
