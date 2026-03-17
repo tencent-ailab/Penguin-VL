@@ -31,7 +31,7 @@ def load_images(image_path):
         images = [Image.open(image_path).convert('RGB')]
     elif isinstance(image_path, str) and os.path.isdir(image_path):
         images = [Image.open(os.path.join(image_path, f)).convert('RGB') for f in sorted(os.listdir(image_path))]
-    elif isinstance(image_path, str) and image_path.startswith("http://") or image_path.startswith("https://"):
+    elif isinstance(image_path, str) and (image_path.startswith("http://") or image_path.startswith("https://")):
         images = Image.open(requests.get(image_path, stream=True).raw)
     elif isinstance(image_path, list) and isinstance(image_path[0], str):
         images = [Image.open(f).convert('RGB') for f in image_path]
