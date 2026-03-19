@@ -19,16 +19,18 @@
 ---
 
 ## 📰 News
-* **[2026.03.17]** 🔥🔥 We realease **training code** for Penguin-VL, details see [§ Training](#training).
+* **[2026.03.20]** 🔥🔥 We release **Penguin-Recap-I**, the public image training data for Penguin-VL, on Hugging Face: [Penguin-Recap-I](https://huggingface.co/datasets/tencent/Penguin-Recap-I).
+* **[2026.03.17]** 🔥🔥 We release **training code** for Penguin-VL, details see [§ Training](#training).
 * **[2026.03.10]** Penguin-VL got **`#1 Paper of the day`** in [huggingface daily paper](https://huggingface.co/papers/date/2026-03-09).
 * **[2026.03.09]** Release inference code, vLLM plugin, and Gradio demo for Penguin-VL.
 * **[2026.03.09]** Release [Penguin-VL-2B](https://huggingface.co/tencent/Penguin-VL-2B), [Penguin-VL-8B](https://huggingface.co/tencent/Penguin-VL-8B), and [Penguin Vision Encoder](https://huggingface.co/tencent/Penguin-Encoder) on Hugging Face.
+
 
 ---
 
 ## 📌 TODO
 
-- [ ] Release training data
+- [x] Release our re-captioned training data - Penguin-Recap-I (Image)
 - [x] Release training code
 - [x] Release model checkpoint
 - [x] Release inference code
@@ -283,7 +285,28 @@ CUDA_VISIBLE_DEVICES=0,1 python inference/test_vllm_infer.py --model-path tencen
 ---
 <a id="training"></a>
 ## 🗝️ Training
+
+### Training Data
+
+We release **Penguin-Recap-I** as the public image training data accompanying Penguin-VL:
+[https://huggingface.co/datasets/tencent/Penguin-Recap-I](https://huggingface.co/datasets/tencent/Penguin-Recap-I)
+
+The release currently covers the image-side recap data and contains three subsets:
+- `datacomp_coyo_penguin`
+- `sa1b_penguin`
+- `openimages_penguin`
+
+For `datacomp_coyo_penguin`, we provide the original image URLs in each JSON entry for downloading.
+
+For `sa1b_penguin` and `openimages_penguin`, we provide the training annotations together with image file names / relative paths, so users can map each sample back to the original image resources and download the raw images from OpenDataLab or the official sources:
+
+- OpenDataLab OpenImagesV6: https://opendatalab.com/OpenDataLab/OpenImagesV6/tree/main/raw
+- OpenDataLab SA-1B: https://opendatalab.com/OpenDataLab/SA-1B/tree/main/raw
+- Official Segment Anything / SA-1B: https://ai.meta.com/datasets/segment-anything/
+- Official OpenImages: https://storage.googleapis.com/openimages/web/index.html
+
 ### Training Pipeline Overview
+
 
 Penguin-VL adopts a **4-stage curriculum**:
 
