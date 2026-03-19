@@ -19,7 +19,7 @@
 ---
 
 ## 📰 News
-* **[2026.03.20]** 🔥🔥 We release **Penguin-Recap-I**, the public image training data for Penguin-VL, on Hugging Face: [Penguin-Recap-I](https://huggingface.co/datasets/tencent/Penguin-Recap-I).
+* **[2026.03.20]** 🔥🔥 We release **[Penguin-Recap-I](https://huggingface.co/datasets/tencent/Penguin-Recap-I)**, our reconstructed high-quality image training data for Penguin-VL, on Hugging Face.
 * **[2026.03.17]** 🔥🔥 We release **training code** for Penguin-VL, details see [§ Training](#training).
 * **[2026.03.10]** Penguin-VL got **`#1 Paper of the day`** in [huggingface daily paper](https://huggingface.co/papers/date/2026-03-09).
 * **[2026.03.09]** Release inference code, vLLM plugin, and Gradio demo for Penguin-VL.
