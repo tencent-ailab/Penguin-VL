@@ -209,7 +209,7 @@ class PenguinVLQwen3ForCausalLM(Qwen3ForCausalLM, VLMMetaForCausalLM):
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 
-        if self.config.use_vision_teacher:
+        if self.config.use_reconstruct:
             self.vision_distill_layer = nn.Linear(self.model.vision_encoder.hidden_size, self.model.vision_encoder_teacher.hidden_size, bias=True)
 
         # Initialize weights and apply final processing
@@ -295,25 +295,26 @@ class PenguinVLQwen3ForCausalLM(Qwen3ForCausalLM, VLMMetaForCausalLM):
             )
             caption_loss = loss.detach()
             if self.config.use_reconstruct:
+                if mm_features_teacher is None or mm_features_teacher[1] is None:
+                    raise ValueError("`use_reconstruct=True` requires teacher features. Make sure multimodal inputs are provided and the teacher vision encoder is configured.")
                 student_features = mm_features_teacher[0]
                 teacher_features = mm_features_teacher[1]
                 # rgb_pred = self.vision_head(student_features)
                 # image_loss = torch.nn.functional.l1_loss(pixel_values.detach(), rgb_pred)
                 # loss = loss + image_loss * 2
-                if self.config.use_vision_teacher:
-                    student_features = self.vision_distill_layer(student_features)
-                    student_norm = torch.nn.functional.normalize(student_features, p=2, dim=-1)
-                    teacher_norm = torch.nn.functional.normalize(teacher_features, p=2, dim=-1)
-                    teacher_loss = 1 - torch.nn.functional.cosine_similarity(student_features, teacher_features, dim=-1).mean()
-                    teacher_loss = teacher_loss + torch.nn.functional.smooth_l1_loss(student_features, teacher_features, beta=0.001)
-                    
-                    relation_loss = torch.nn.functional.smooth_l1_loss(
-                        torch.einsum('id,jd->ij', student_norm, student_norm),
-                        torch.einsum('id,jd->ij', teacher_norm, teacher_norm),
-                        beta=0.001
-                    )
+                student_features = self.vision_distill_layer(student_features)
+                student_norm = torch.nn.functional.normalize(student_features, p=2, dim=-1)
+                teacher_norm = torch.nn.functional.normalize(teacher_features, p=2, dim=-1)
+                teacher_loss = 1 - torch.nn.functional.cosine_similarity(student_features, teacher_features, dim=-1).mean()
+                teacher_loss = teacher_loss + torch.nn.functional.smooth_l1_loss(student_features, teacher_features, beta=0.001)
 
-                    loss = loss + (teacher_loss + relation_loss) * (3 - kwargs.get("current_epoch", 0)) / kwargs.get("num_items_in_batch", 1)
+                relation_loss = torch.nn.functional.smooth_l1_loss(
+                    torch.einsum('id,jd->ij', student_norm, student_norm),
+                    torch.einsum('id,jd->ij', teacher_norm, teacher_norm),
+                    beta=0.001
+                )
+
+                loss = loss + (teacher_loss + relation_loss) * (3 - kwargs.get("current_epoch", 0)) / kwargs.get("num_items_in_batch", 1)
         else:
             # Only compute necessary logits, and do not upcast them to float if we are not computing the loss
             slice_indices = slice(-logits_to_keep, None) if isinstance(logits_to_keep, int) else logits_to_keep

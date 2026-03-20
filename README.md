@@ -42,7 +42,7 @@
 
 **Penguin-VL** is a compact vision-language model family built to study how far multimodal efficiency can be pushed by redesigning the **vision encoder**, rather than only scaling data or model size.
 
-Most modern VLMs rely on vision encoders pretrained with large-scale **contrastive objectives** such as CLIP or SigLIP. Penguin-VL argues that this setup can be suboptimal for multimodal reasoning because contrastive learning favors coarse category-level invariances over the fine-grained signals needed for **OCR, document understanding, dense captioning, and complex reasoning**. Instead, Penguin-VL introduces **Penguin-Encoder**, a vision encoder **initialized from a text-only LLM**, so the visual backbone starts closer to the language model representation space and learns more data-efficiently.
+Most modern VLMs rely on vision encoders pretrained with large-scale **contrastive objectives** such as CLIP-style pretraining. Penguin-VL argues that this setup can be suboptimal for multimodal reasoning because contrastive learning favors coarse category-level invariances over the fine-grained signals needed for **OCR, document understanding, dense captioning, and complex reasoning**. Instead, Penguin-VL introduces **Penguin-Encoder**, a vision encoder **initialized from a text-only LLM**, so the visual backbone starts closer to the language model representation space and learns more data-efficiently.
 
 <p align="center">
   <img src="assets/framework.png" alt="Penguin-VL framework overview" width="920"/>
@@ -57,7 +57,7 @@ Most modern VLMs rely on vision encoders pretrained with large-scale **contrasti
   Initialize the vision encoder from a text-only LLM (e.g., Qwen3-0.6B), convert causal attention to **bidirectional attention**, and add **2D-RoPE** for variable-resolution vision tokens.
 
 - **Mixed-supervision encoder pretraining**  
-  Warm up the LLM-initialized encoder with a reconstruction/distillation objective (amplitude / direction / relation losses) to inject visual knowledge stably, then switch to high-resolution alignment.
+  Warm up the LLM-initialized encoder with a reconstruction/distillation objective under a teacher vision encoder (amplitude / direction / relation losses) to inject visual knowledge stably, then switch to high-resolution alignment.
 
 - **Video efficiency via Temporal Redundancy-Aware (TRA) token compression**  
   Dynamically allocate token budgets across **key frames vs. intermediate frames** under a global token budget to scale to long videos more efficiently.
@@ -313,7 +313,7 @@ Penguin-VL adopts a **4-stage curriculum**:
 
 | Stage | Script | Description | Trainable Modules |
 | :---- | :----- | :---------- | :---------------- |
-| **Stage 1** | `vision_encoder_pretrain.sh` | Vision encoder warm-up with reconstruction / distillation losses. The LLM-initialized encoder learns to extract visual features under supervision from a SigLIP teacher. | Vision encoder + projector |
+| **Stage 1** | `vision_encoder_pretrain.sh` | Vision encoder warm-up with reconstruction / distillation losses. The LLM-initialized encoder learns to extract visual features under supervision from a VideoLLaMA3 vision encoder teacher. | Vision encoder + projector |
 | **Stage 2** | `vision_encoder_pretrain_hres.sh` | High-resolution alignment. Continues from Stage 1 with higher sequence budgets to handle dense text and document images. | All parameters |
 | **Stage 3** | `pretrain.sh` | Full multi-modal pre-training on large-scale image and video corpora. | All parameters |
 | **Stage 4** | `sft.sh` | Supervised fine-tuning (instruction tuning) on high-quality chat/task data. | All parameters |
@@ -465,9 +465,8 @@ Key arguments specific to Stage 1:
 ```bash
 --model_path        Qwen/Qwen3-1.7B                            # LLM part
 --vision_encoder    Cyril666/SFL-Encoder-Pretrained-Qwen3      # LLM-initialized vision encoder (converted from Qwen/Qwen-0.6B and modified the layer parameter names.)
---use_reconstruct   True                                       # Enable reconstruction / distillation loss
---use_vision_teacher True                                      # Enable SigLIP teacher supervision
---vision_encoder_teacher DAMO-NLP-SG/VL3-SigLIP-NaViT
+--use_reconstruct   True                                       # Enable Stage 1 reconstruction / distillation loss
+--vision_encoder_teacher DAMO-NLP-SG/VL3-SigLIP-NaViT          # VideoLLaMA3 vision encoder teacher checkpoint
 --model_max_length  4096
 --mm_max_length     2048
 ```
@@ -510,9 +509,8 @@ Loads from `stage_3` checkpoint. Uses high-quality instruction-following data fo
 | `--model_path` | Path to LLM backbone or previous stage checkpoint | — |
 | `--vision_encoder` | Path or HF ID of the vision encoder | — |
 | `--vision_projector_type` | Projector architecture | `mlp2x_gelu` |
-| `--use_reconstruct` | Enable visual reconstruction loss (Stage 1) | `False` |
-| `--use_vision_teacher` | Enable distillation from SigLIP teacher (Stage 1) | `False` |
-| `--vision_encoder_teacher` | SigLIP teacher model path | `None` |
+| `--use_reconstruct` | Enable the Stage 1 visual reconstruction / distillation loss | `False` |
+| `--vision_encoder_teacher` | VideoLLaMA3 vision encoder teacher checkpoint | `None` |
 | `--data_path` | Space-separated list of annotation files | — |
 | `--data_folder` | Root folder for all media files | — |
 | `--fps` | Video sampling frame rate | `1` |

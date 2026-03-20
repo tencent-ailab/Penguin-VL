@@ -32,7 +32,9 @@ class VLMMetaModel:
         if hasattr(config, "vision_encoder"):
             delay_load = not hasattr(config, "mm_vision_encoder")
             self.vision_encoder = build_vision_encoder(config, delay_load=delay_load)
-            if getattr(config, "use_vision_teacher", False):
+            if getattr(config, "use_reconstruct", False):
+                if not getattr(config, "vision_encoder_teacher", None):
+                    raise ValueError("`use_reconstruct=True` requires `vision_encoder_teacher` to be set in the config.")
                 temp_config = deepcopy(config)
                 temp_config.vision_encoder = temp_config.vision_encoder_teacher
                 print("Building vision teacher:", temp_config.vision_encoder)
@@ -62,7 +64,9 @@ class VLMMetaModel:
 
         if self.get_vision_encoder() is None:
             vision_encoder = build_vision_encoder(model_args)
-            if getattr(model_args, "use_vision_teacher", False):
+            if getattr(model_args, "use_reconstruct", False):
+                if not getattr(model_args, "vision_encoder_teacher", None):
+                    raise ValueError("`use_reconstruct=True` requires `vision_encoder_teacher` to be set.")
                 temp_args = deepcopy(model_args)
                 temp_args.vision_encoder = temp_args.vision_encoder_teacher
                 print("Building vision teacher:", temp_args.vision_encoder)
@@ -75,7 +79,7 @@ class VLMMetaModel:
                 self.vision_encoder = vision_encoder
         else:
             self.vision_encoder.load_model(self.vision_encoder.cfg_only)
-            if getattr(model_args, "use_vision_teacher", False):
+            if getattr(model_args, "use_reconstruct", False):
                 print("Loading vision teacher...")
                 self.vision_encoder_teacher.load_model(self.vision_encoder_teacher.cfg_only)
             vision_encoder = self.vision_encoder

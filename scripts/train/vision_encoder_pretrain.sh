@@ -44,7 +44,6 @@ torchrun --nnodes $WORLD_SIZE \
     --vision_encoder Cyril666/SFL-Encoder-Pretrained-Qwen3 \
     --vision_projector_type mlp2x_gelu \
     --use_reconstruct True \
-    --use_vision_teacher True \
     --vision_encoder_teacher DAMO-NLP-SG/VL3-SigLIP-NaViT \
     --data_path ${DATA_DIR}/annotations.jsonl \
     --data_folder ${DATA_DIR} \

@@ -94,9 +94,8 @@ class ModelArguments:
     mm_vision_select_feature: Optional[str] = field(default="patch")
     mm_attn_implementation: Optional[str] = field(default="flash_attention_2")
     # Visual expert arguments
-    use_reconstruct: Optional[bool] = field(default=False, metadata={"help": "Whether to use visual reconstruction loss."})
-    use_vision_teacher: Optional[bool] = field(default=False, metadata={"help": "Whether to use visual teacher."})
-    vision_encoder_teacher: Optional[str] = field(default=None)
+    use_reconstruct: Optional[bool] = field(default=False, metadata={"help": "Whether to enable the Stage 1 visual auxiliary loss."})
+    vision_encoder_teacher: Optional[str] = field(default=None, metadata={"help": "Teacher vision encoder checkpoint for Stage 1 reconstruction/distillation."})
 
 
 @dataclass
@@ -464,6 +463,9 @@ def train(attn_implementation=None):
     compute_dtype = (torch.float16 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32))
     model_args.torch_dtype = compute_dtype
 
+    if model_args.use_reconstruct and not model_args.vision_encoder_teacher:
+        raise ValueError("`--use_reconstruct True` requires `--vision_encoder_teacher` to be set.")
+
     bnb_model_from_pretrained_args = {}
     if training_args.bits in [4, 8]:
         from transformers import BitsAndBytesConfig
@@ -491,7 +493,6 @@ def train(attn_implementation=None):
     config._attn_implementation = attn_implementation
     config.loss_reduction_scope = training_args.loss_reduction_scope
     config.use_reconstruct = model_args.use_reconstruct
-    config.use_vision_teacher = model_args.use_vision_teacher
     config.vision_encoder_teacher = model_args.vision_encoder_teacher
 
     if model_args.vision_encoder is not None:
