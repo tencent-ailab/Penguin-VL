@@ -42,7 +42,7 @@
 
 **Penguin-VL** is a compact vision-language model family built to study how far multimodal efficiency can be pushed by redesigning the **vision encoder**, rather than only scaling data or model size.
 
-Most modern VLMs rely on vision encoders pretrained with large-scale **contrastive objectives** such as CLIP-style pretraining. Penguin-VL argues that this setup can be suboptimal for multimodal reasoning because contrastive learning favors coarse category-level invariances over the fine-grained signals needed for **OCR, document understanding, dense captioning, and complex reasoning**. Instead, Penguin-VL introduces **Penguin-Encoder**, a vision encoder **initialized from a text-only LLM**, so the visual backbone starts closer to the language model representation space and learns more data-efficiently.
+Most modern VLMs rely on vision encoders pretrained with large-scale **contrastive objectives** such as CLIP/SigLIP-style pretraining. Penguin-VL argues that this setup can be suboptimal for multimodal reasoning because contrastive learning favors coarse category-level invariances over the fine-grained signals needed for **OCR, document understanding, dense captioning, and complex reasoning**. Instead, Penguin-VL introduces **Penguin-Encoder**, a vision encoder **initialized from a text-only LLM**, so the visual backbone starts closer to the language model representation space and learns more data-efficiently.
 
 <p align="center">
   <img src="assets/framework.png" alt="Penguin-VL framework overview" width="920"/>
