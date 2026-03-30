@@ -1,31 +1,32 @@
-<p align="center">
+, <p align="center">
     <img src="assets/logo.png" width="150" style="margin-bottom: 0.2;"/>
 </p>
 
 <h3 align="center">Penguin-VL: Exploring the Efficiency Limits of VLM with LLM-based Vision Encoders</h3>
 
 <h5 align="center">
-
-[![Hugging Face](https://img.shields.io/badge/🤗-2B_Model-F6C343.svg)](https://huggingface.co/tencent/Penguin-VL-2B)
-[![Hugging Face](https://img.shields.io/badge/🤗-8B_Model-F6C343.svg)](https://huggingface.co/tencent/Penguin-VL-8B)
-[![Hugging Face](https://img.shields.io/badge/🤗-Encoder-F6C343.svg)](https://huggingface.co/tencent/Penguin-Encoder) 
-[![Hugging Face](https://img.shields.io/badge/🤗-Dataset-F6C343.svg)](https://huggingface.co/datasets/tencent/Penguin-Recap-I) <br>
-[![Hugging Face](https://img.shields.io/badge/🤗-Demo_Space_L40-F6C343.svg)](https://huggingface.co/spaces/tencent/Penguin-VL)
-[![Hugging Face](https://img.shields.io/badge/🤗-Demo_Space_Zero-F6C343.svg)](https://huggingface.co/spaces/lkeab/Penguin-VL-8B) <br>
-[![Project Page](https://img.shields.io/badge/Project-Page-blue?style=plastic&logo=Google%20chrome&logoColor=blue)](https://penguin-vl.github.io)
-[![hf_paper](https://img.shields.io/badge/🤗-Paper%20In%20HF-8B5CF6.svg)](https://huggingface.co/papers/2603.06569)
-[![arXiv](https://img.shields.io/badge/Arxiv-2603.06569-B91C1C.svg?logo=arXiv)](https://arxiv.org/abs/2603.06569)
+  <a href="https://huggingface.co/tencent/Penguin-VL-2B"><img src="https://img.shields.io/badge/🤗-2B_Model-F6C343.svg" alt="Hugging Face"></a>
+  <a href="https://huggingface.co/tencent/Penguin-VL-8B"><img src="https://img.shields.io/badge/🤗-8B_Model-F6C343.svg" alt="Hugging Face"></a>
+  <a href="https://huggingface.co/tencent/Penguin-Encoder"><img src="https://img.shields.io/badge/🤗-Encoder-F6C343.svg" alt="Hugging Face"></a>
+  <a href="https://huggingface.co/datasets/tencent/Penguin-Recap-I"><img src="https://img.shields.io/badge/🤗-Image_Dataset-F6C343.svg" alt="Hugging Face"></a>
+  <a href="https://huggingface.co/datasets/tencent/Penguin-Recap-V"><img src="https://img.shields.io/badge/🤗-Video_Dataset-F6C343.svg" alt="Hugging Face"></a> <br>
+  <a href="https://huggingface.co/spaces/tencent/Penguin-VL"><img src="https://img.shields.io/badge/🤗-Demo_Space_L40-F6C343.svg" alt="Hugging Face"></a>
+  <a href="https://huggingface.co/spaces/lkeab/Penguin-VL-8B"><img src="https://img.shields.io/badge/🤗-Demo_Space_Zero-F6C343.svg" alt="Hugging Face"></a> <br>
+  <a href="https://penguin-vl.github.io"><img src="https://img.shields.io/badge/Project-Page-blue?style=plastic&logo=Google%20chrome&logoColor=blue" alt="Project Page"></a>
+  <a href="https://huggingface.co/papers/2603.06569"><img src="https://img.shields.io/badge/🤗-Paper%20In%20HF-8B5CF6.svg" alt="hf_paper"></a>
+  <a href="https://arxiv.org/abs/2603.06569"><img src="https://img.shields.io/badge/Arxiv-2603.06569-B91C1C.svg?logo=arXiv" alt="arXiv"></a>
 </h5>
 
 ---
 
 ## 📰 News
+* **[2026.03.30]** 🔥🔥 We release **[Penguin-Recap-V](https://huggingface.co/datasets/tencent/Penguin-Recap-V)**! This dataset features multi-granularity video annotations with descriptions across three temporal scales: Dense time-level, Paragraph-level, and Video-level.
+* **[2026.03.26]** 🔥🔥 The evaluation of Penguin-VL on benchmarks is now supported in **[lmms-eval](https://github.com/EvolvingLMMs-Lab/lmms-eval/)**.
 * **[2026.03.20]** 🔥🔥 We release **[Penguin-Recap-I](https://huggingface.co/datasets/tencent/Penguin-Recap-I)**, our reconstructed high-quality image training data for Penguin-VL, on Hugging Face.
-* **[2026.03.17]** 🔥🔥 We release **training code** for Penguin-VL, details see [§ Training](#training).
+* **[2026.03.17]** We release **training code** for Penguin-VL, details see [§ Training](#training).
 * **[2026.03.10]** Penguin-VL got **`#1 Paper of the day`** in [huggingface daily paper](https://huggingface.co/papers/date/2026-03-09).
 * **[2026.03.09]** Release inference code, vLLM plugin, and Gradio demo for Penguin-VL.
 * **[2026.03.09]** Release [Penguin-VL-2B](https://huggingface.co/tencent/Penguin-VL-2B), [Penguin-VL-8B](https://huggingface.co/tencent/Penguin-VL-8B), and [Penguin Vision Encoder](https://huggingface.co/tencent/Penguin-Encoder) on Hugging Face.
-
 
 ---
 
